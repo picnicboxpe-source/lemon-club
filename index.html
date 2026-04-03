@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#111111">
+<title>🍋 Lemon Club</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#f5f5f0;color:#111;min-height:100vh;-webkit-font-smoothing:antialiased}
+:root{--y:#f5e642;--yd:#92710a;--yl:#fefce8;--white:#fff;--bg:#f5f5f0;--bg2:#ececec;--border:#d5d5d0;--gray:#6b7280;--green:#10b981;--green-l:#d1fae5;--red:#ef4444;--red-l:#fee2e2;--blue:#3b82f6;--blue-l:#dbeafe;--warn:#f59e0b;--warn-l:#fef3c7}
+.app{display:flex;flex-direction:column;min-height:100vh}
+.hdr{background:#111;color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.hdr-l{display:flex;align-items:center;gap:8px}
+.logo{font-size:22px}
+.brand{font-size:16px;font-weight:600;color:var(--y);letter-spacing:.3px}
+.btn-ciclo{background:var(--y);color:#111;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-ciclo:hover{background:#e6d630;transform:translateY(-1px)}
+.nav{display:flex;overflow-x:auto;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:56px;z-index:40;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.ntab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 16px;border:none;background:none;cursor:pointer;font-family:inherit;font-size:11px;color:var(--gray);border-bottom:2.5px solid transparent;white-space:nowrap;transition:all .15s;min-width:64px}
+.ntab.on{color:#111;border-bottom-color:var(--y);font-weight:600}
+.ntab:hover{color:#111;background:#fafaf7}
+.tico{font-size:18px}
+.main{padding:16px;max-width:860px;margin:0 auto;width:100%;flex:1}
+.pgtitle{font-size:20px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.ctitle{font-size:11px;font-weight:600;color:var(--gray);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+input[type=text],input[type=number],input[type=date],select,textarea{font-family:inherit;font-size:13px;padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);color:#111;flex:1;min-width:80px;transition:border-color .15s;-webkit-appearance:none}
+input:focus,select:focus{outline:none;border-color:var(--yd);box-shadow:0 0 0 3px rgba(212,168,10,.15)}
+.btn{font-family:inherit;font-size:13px;padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);color:#111;cursor:pointer;transition:all .15s;font-weight:500}
+.btn:hover{background:var(--bg)}
+.btn.primary{background:#111;color:#fff;border-color:#111}
+.btn.primary:hover{background:#333}
+.btn.yellow{background:var(--y);color:#111;border-color:var(--y)}
+.btn.yellow:hover{background:#e6d630}
+.btn.danger{border-color:#fca5a5;color:var(--red);background:transparent}
+.btn.danger:hover{background:var(--red-l)}
+.btn.success{border-color:#6ee7b7;color:var(--green);background:transparent}
+.btn.success:hover{background:var(--green-l)}
+.btn.sm{padding:4px 10px;font-size:12px}
+.full{width:100%;margin-top:6px}
+.plist{display:flex;flex-direction:column;gap:8px}
+.pitem{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:11px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;transition:box-shadow .15s}
+.pitem:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.pitem.zero{border-color:#fca5a5;background:var(--red-l)}
+.pname{flex:1;font-size:14px;font-weight:500;min-width:80px;cursor:text}
+.stkrow{display:flex;align-items:center;gap:8px;margin-left:auto}
+.stklbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:1px 5px;border-radius:4px}
+.stklbl.zero{background:var(--red-l);color:var(--red)}
+.stklbl.low{background:var(--warn-l);color:#92400e}
+.stklbl.ok{background:var(--green-l);color:#065f46}
+.stknum{font-size:22px;font-weight:600;min-width:30px;text-align:center;line-height:1}
+.stknum.zero{color:var(--red)}
+.stknum.low{color:var(--warn)}
+.sbtn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:all .15s;line-height:1}
+.sbtn.plus:hover{background:var(--y);border-color:var(--yd)}
+.sbtn.minus:hover{background:var(--red-l);border-color:#fca5a5}
+.sbtn:disabled{opacity:.3;cursor:not-allowed}
+.vlist,.pedlist{display:flex;flex-direction:column;gap:6px}
+.vrow{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg);border-radius:8px;font-size:13px;gap:8px;flex-wrap:wrap}
+.vtags{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.tag{font-size:10px;padding:2px 7px;border-radius:5px;font-weight:600}
+.tag.city{background:var(--blue-l);color:#1e40af}
+.tag.monto{background:var(--green-l);color:#065f46}
+.statsrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px}
+.statc{background:var(--bg);border-radius:10px;padding:12px 14px}
+.slabel{font-size:11px;color:var(--gray);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.sval{font-size:22px;font-weight:600;color:#111}
+.sval.green{color:var(--green)}
+.sval.red{color:var(--red)}
+.sval.gold{color:var(--yd)}
+.balcard{border-radius:12px;padding:20px;margin-bottom:10px;text-align:center}
+.balcard.gold{background:var(--yl);border:1.5px solid #d4a80a}
+.balcard.green{background:var(--green-l);border:1.5px solid #6ee7b7}
+.balcard.red{background:var(--red-l);border:1.5px solid #fca5a5}
+.balcard .bl{font-size:11px;color:var(--gray);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.balcard .bv{font-size:34px;font-weight:600}
+.balcard.gold .bv{color:var(--yd)}
+.balcard.green .bv{color:#047857}
+.balcard.red .bv{color:var(--red)}
+.socias{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.socia{background:var(--yl);border:1.5px solid #d4a80a;border-radius:10px;padding:14px;text-align:center}
+.soc-lbl{font-size:11px;color:var(--yd);margin-bottom:4px;font-weight:600}
+.soc-val{font-size:17px;font-weight:600}
+.cicloitem{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;transition:box-shadow .15s}
+.cicloitem:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.ciclo-hdr{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ciclo-name{font-size:14px;font-weight:600}
+.ciclo-fecha{font-size:11px;color:var(--gray);margin-top:2px}
+.ciclo-nums{display:flex;gap:8px;font-size:13px;font-weight:600}
+.ciclo-det{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--gray);display:flex;flex-direction:column;gap:4px}
+.empty{text-align:center;padding:28px 16px;color:var(--gray);font-size:13px;border:1.5px dashed var(--border);border-radius:8px}
+.errbox{background:var(--red-l);color:var(--red);border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:8px;font-weight:500}
+.modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;backdrop-filter:blur(4px)}
+.modal{background:var(--white);border-radius:16px;padding:24px;width:100%;max-width:400px;box-shadow:0 20px 50px rgba(0,0,0,.2)}
+.modal h3{font-size:18px;font-weight:600;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--gray);margin-bottom:14px;line-height:1.6}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.chk-row{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:10px}
+.chk-row input{width:auto;flex:none}
+.pedrow{background:var(--bg);border-radius:8px;padding:10px 13px;display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.ped-info{flex:1}
+.ped-prod{font-size:14px;font-weight:600}
+.ped-meta{font-size:11px;color:var(--gray);margin-top:2px}
+.ciclo-list{display:flex;flex-direction:column;gap:8px}
+@media(max-width:600px){
+  .hdr{padding:10px 12px}
+  .main{padding:12px}
+  .socias{grid-template-columns:1fr}
+  .balcard .bv{font-size:26px}
+  .brand{font-size:14px}
+  .form-grid-2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+<div class="hdr">
+  <div class="hdr-l"><span class="logo">🍋</span><span class="brand">Lemon Club</span></div>
+  <button class="btn-ciclo" onclick="openCiclo()">🔒 Cerrar ciclo</button>
+</div>
+<nav class="nav" id="nav"></nav>
+<div class="main" id="main"></div>
+</div>
+
+<script>
+const TABS=[
+  {id:'inv',icon:'📦',label:'Inventario'},
+  {id:'ven',icon:'💰',label:'Ventas'},
+  {id:'ped',icon:'⏳',label:'Pendientes'},
+  {id:'fin',icon:'📊',label:'Finanzas'},
+  {id:'inv2',icon:'💸',label:'Inversión'},
+  {id:'bal',icon:'📈',label:'Balance'},
+  {id:'his',icon:'🗂',label:'Historial'},
+]
+let tab='inv'
+const KEY='lc_v3'
+let D=load()
+function load(){try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):{productos:[],ventas:[],pedidos:[],ingresos:[],gastos:[],ciclos:[]}}catch{return{productos:[],ventas:[],pedidos:[],ingresos:[],gastos:[],ciclos:[]}}}
+function save(){localStorage.setItem(KEY,JSON.stringify(D))}
+function uid(){return Math.random().toString(36).slice(2)}
+function $id(id){return document.getElementById(id)}
+function h(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function today(){return new Date().toISOString().split('T')[0]}
+function fmt(n){return '$'+Number(n||0).toFixed(2)}
+
+function render(){
+  $id('nav').innerHTML=TABS.map(t=>`<button class="ntab${tab===t.id?' on':''}" onclick="setTab('${t.id}')"><span class="tico">${t.icon}</span>${t.label}</button>`).join('')
+  const m=$id('main')
+  const pages={inv:renderInv,ven:renderVen,ped:renderPed,fin:renderFin,inv2:renderInv2,bal:renderBal,his:renderHis}
+  m.innerHTML=(pages[tab]||renderInv)()
+}
+function setTab(t){tab=t;render()}
+
+/* ── INVENTARIO ── */
+function renderInv(){
+  const items=D.productos.map(p=>{
+    const lbl=p.cantidad===0?'<span class="stklbl zero">AGOTADO</span>':p.cantidad<=3?'<span class="stklbl low">BAJO</span>':'<span class="stklbl ok">OK</span>'
+    const ncls=p.cantidad===0?'zero':p.cantidad<=3?'low':''
+    return `<div class="pitem${p.cantidad===0?' zero':''}">
+      <div class="pname" id="pn_${p.id}" ondblclick="editNombre('${p.id}')" title="Doble click para editar">${h(p.nombre)}</div>
+      <div class="stkrow">
+        ${lbl}
+        <button class="sbtn minus" onclick="adjStock('${p.id}',-1)"${p.cantidad===0?' disabled':''}>−</button>
+        <div class="stknum ${ncls}">${p.cantidad}</div>
+        <button class="sbtn plus" onclick="adjStock('${p.id}',1)">+</button>
+        <button class="btn sm danger" onclick="delProd('${p.id}')">🗑</button>
+      </div>
+    </div>`
+  }).join('')
+  return `<div class="pgtitle">📦 Inventario</div>
+  <div class="card">
+    <div class="row">
+      <input id="np_nom" type="text" placeholder="Nombre del producto" onkeydown="if(event.key==='Enter')addProd()">
+      <input id="np_qty" type="number" min="0" value="0" style="max-width:70px" placeholder="Stock inicial">
+      <button class="btn primary" onclick="addProd()">+ Agregar</button>
+    </div>
+  </div>
+  <div class="plist">${items||'<div class="empty">Agrega tu primer producto</div>'}</div>`
+}
+function addProd(){const n=$id('np_nom')?.value.trim();if(!n)return;D.productos.unshift({id:uid(),nombre:n,cantidad:parseInt($id('np_qty')?.value)||0});save();render()}
+window.adjStock=(id,d)=>{const p=D.productos.find(x=>x.id===id);if(p){p.cantidad=Math.max(0,p.cantidad+d);save();render()}}
+window.delProd=(id)=>{if(!confirm('¿Eliminar producto?'))return;D.productos=D.productos.filter(x=>x.id!==id);save();render()}
+window.editNombre=(id)=>{
+  const p=D.productos.find(x=>x.id===id);if(!p)return
+  const el=$id('pn_'+id);if(!el)return
+  el.innerHTML=`<input type="text" value="${h(p.nombre)}" style="font-size:14px;font-weight:500;width:100%;padding:2px 6px;border:1.5px solid #d4a80a;border-radius:4px" onblur="saveNombre('${id}',this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')this.blur()">`
+  el.querySelector('input').focus()
+}
+window.saveNombre=(id,val)=>{const p=D.productos.find(x=>x.id===id);if(p&&val.trim())p.nombre=val.trim();save();render()}
+
+/* ── VENTAS ── */
+function renderVen(){
+  const opts=D.productos.map(p=>`<option value="${p.id}">${h(p.nombre)} (${p.cantidad} disp.)</option>`).join('')
+  const rows=D.ventas.map(v=>`<div class="vrow">
+    <div><strong>${h(v.pnombre)}</strong> ×${v.cantidad}</div>
+    <div class="vtags">
+      <span class="tag city">${h(v.ciudad)}</span>
+      ${v.monto?`<span class="tag monto">${fmt(v.monto)}</span>`:''}
+      ${v.dir?`<span style="font-size:11px;color:#6b7280">${h(v.dir)}</span>`:''}
+      <span style="font-size:11px;color:#6b7280">${v.fecha}</span>
+    </div>
+  </div>`).join('')
+  return `<div class="pgtitle">💰 Ventas</div>
+  <div class="card">
+    <div class="ctitle">Nueva venta</div>
+    <div id="ven_err"></div>
+    <div class="row">
+      <select id="v_prod"><option value="">— Seleccionar producto —</option>${opts}</select>
+    </div>
+    <div class="row">
+      <input id="v_qty" type="number" min="1" value="1" placeholder="Cantidad">
+      <input id="v_monto" type="number" min="0" step="0.01" placeholder="Monto $">
+    </div>
+    <div class="row">
+      <select id="v_ciudad"><option>Caracas</option><option>Interior</option><option>Dirección</option></select>
+      <input id="v_fecha" type="date" value="${today()}" style="max-width:150px">
+    </div>
+    <input id="v_dir" type="text" placeholder="Dirección / referencia de entrega" style="width:100%;margin-bottom:8px">
+    <button class="btn primary full" onclick="addVenta()">✓ Registrar venta</button>
+  </div>
+  <div class="card">
+    <div class="ctitle">Ventas registradas (${D.ventas.length})</div>
+    <div class="vlist">${rows||'<div class="empty">Sin ventas aún</div>'}</div>
+  </div>`
+}
+function addVenta(){
+  const pid=$id('v_prod')?.value;const err=$id('ven_err');err.innerHTML=''
+  if(!pid){err.innerHTML='<div class="errbox">⚠️ Selecciona un producto</div>';return}
+  const p=D.productos.find(x=>x.id===pid)
+  const qty=parseInt($id('v_qty')?.value)||1
+  if(!p)return
+  if(p.cantidad<qty){err.innerHTML=`<div class="errbox">⚠️ Stock insuficiente. Solo hay ${p.cantidad} unidades.</div>`;return}
+  p.cantidad-=qty
+  D.ventas.unshift({id:uid(),pid,pnombre:p.nombre,cantidad:qty,monto:parseFloat($id('v_monto')?.value)||0,ciudad:$id('v_ciudad')?.value||'Caracas',dir:$id('v_dir')?.value||'',fecha:$id('v_fecha')?.value||today()})
+  save();render()
+}
+
+/* ── PEDIDOS ── */
+function renderPed(){
+  const opts=D.productos.map(p=>`<option value="${p.id}">${h(p.nombre)}</option>`).join('')
+  const pend=D.pedidos.filter(x=>!x.entregado)
+  const rows=pend.map(p=>`<div class="pedrow">
+    <div class="ped-info">
+      <div class="ped-prod">${h(p.pnombre)} ×${p.cantidad}</div>
+      <div class="ped-meta">${p.cliente?'👤 '+h(p.cliente)+'  ':''} ${p.ciudad?'📍 '+h(p.ciudad):''} ${p.dir?'— '+h(p.dir):''}</div>
+    </div>
+    <button class="btn sm success" onclick="entregarPed('${p.id}')">✓ Entregado</button>
+  </div>`).join('')
+  return `<div class="pgtitle">⏳ Pendientes</div>
+  <div class="card">
+    <div class="ctitle">Nuevo pedido pendiente</div>
+    <div class="row">
+      <select id="pd_prod"><option value="">— Producto —</option>${opts}</select>
+      <input id="pd_qty" type="number" min="1" value="1" style="max-width:65px">
+    </div>
+    <div class="row">
+      <input id="pd_cli" type="text" placeholder="Nombre del cliente">
+      <input id="pd_city" type="text" placeholder="Ciudad">
+    </div>
+    <input id="pd_dir" type="text" placeholder="Dirección de entrega" style="width:100%;margin-bottom:8px">
+    <button class="btn yellow full" onclick="addPed()">+ Agregar pedido pendiente</button>
+  </div>
+  <div class="card">
+    <div class="ctitle" style="display:flex;align-items:center;justify-content:space-between">
+      Esperando entrega
+      <span style="background:var(--yl);color:var(--yd);padding:2px 9px;border-radius:5px;font-size:12px;font-weight:600">${pend.length}</span>
+    </div>
+    <div class="pedlist">${rows||'<div class="empty" style="border-color:#6ee7b7;color:#047857">✅ Todo entregado</div>'}</div>
+  </div>`
+}
+function addPed(){
+  const pid=$id('pd_prod')?.value;if(!pid)return
+  const p=D.productos.find(x=>x.id===pid)
+  D.pedidos.unshift({id:uid(),pid,pnombre:p?.nombre||'',cantidad:parseInt($id('pd_qty')?.value)||1,cliente:$id('pd_cli')?.value||'',ciudad:$id('pd_city')?.value||'',dir:$id('pd_dir')?.value||'',entregado:false,fecha:today()})
+  save();render()
+}
+window.entregarPed=(id)=>{const p=D.pedidos.find(x=>x.id===id);if(p){p.entregado=true;save();render()}}
+
+/* ── FINANZAS ── */
+function renderFin(){
+  const total=D.ingresos.reduce((s,i)=>s+Number(i.monto),0)
+  const rows=D.ingresos.map(i=>`<div class="vrow">
+    <div>${h(i.desc)||'Sin descripción'} <span style="font-size:11px;color:#6b7280">· ${i.fecha}</span></div>
+    <div class="vtags">
+      <span class="tag monto">+${fmt(i.monto)}</span>
+      <button class="btn sm danger" onclick="delIngreso('${i.id}')">🗑</button>
+    </div>
+  </div>`).join('')
+  return `<div class="pgtitle">📊 Finanzas</div>
+  <div class="statsrow">
+    <div class="statc"><div class="slabel">Total ingresos</div><div class="sval green">${fmt(total)}</div></div>
+    <div class="statc"><div class="slabel">Registros</div><div class="sval">${D.ingresos.length}</div></div>
+  </div>
+  <div class="card">
+    <div class="ctitle">Registrar ingreso</div>
+    <div class="row">
+      <input id="fi_desc" type="text" placeholder="Descripción (ej: Ventas del día)">
+      <input id="fi_monto" type="number" min="0" step="0.01" placeholder="Monto $" style="max-width:120px">
+      <input id="fi_fecha" type="date" value="${today()}" style="max-width:150px">
+    </div>
+    <button class="btn primary full" onclick="addIngreso()">+ Registrar ingreso</button>
+  </div>
+  <div class="card">
+    <div class="ctitle">Historial de ingresos</div>
+    <div class="vlist">${rows||'<div class="empty">Sin ingresos aún</div>'}</div>
+  </div>`
+}
+function addIngreso(){const m=parseFloat($id('fi_monto')?.value);if(!m)return;D.ingresos.unshift({id:uid(),desc:$id('fi_desc')?.value||'',monto:m,fecha:$id('fi_fecha')?.value||today()});save();render()}
+window.delIngreso=(id)=>{D.ingresos=D.ingresos.filter(x=>x.id!==id);save();render()}
+
+/* ── INVERSIÓN ── */
+function renderInv2(){
+  const total=D.gastos.reduce((s,g)=>s+Number(g.monto),0)
+  const rows=D.gastos.map(g=>`<div class="vrow">
+    <div>${h(g.desc)} <span style="font-size:11px;color:#6b7280">· ${g.fecha}</span></div>
+    <div class="vtags">
+      <span class="tag" style="background:#fee2e2;color:#b91c1c">−${fmt(g.monto)}</span>
+      <button class="btn sm danger" onclick="delGasto('${g.id}')">🗑</button>
+    </div>
+  </div>`).join('')
+  return `<div class="pgtitle">💸 Inversión / Gastos</div>
+  <div class="statsrow">
+    <div class="statc"><div class="slabel">Total gastado</div><div class="sval red">−${fmt(total)}</div></div>
+    <div class="statc"><div class="slabel">Registros</div><div class="sval">${D.gastos.length}</div></div>
+  </div>
+  <div class="card">
+    <div class="ctitle">Registrar gasto / inversión</div>
+    <div class="row">
+      <input id="ga_desc" type="text" placeholder="Descripción del gasto *">
+      <input id="ga_monto" type="number" min="0" step="0.01" placeholder="Monto $" style="max-width:120px">
+      <input id="ga_fecha" type="date" value="${today()}" style="max-width:150px">
+    </div>
+    <button class="btn danger full" style="width:100%;margin-top:6px;padding:8px;font-size:13px;cursor:pointer" onclick="addGasto()">− Registrar gasto</button>
+  </div>
+  <div class="card">
+    <div class="ctitle">Gastos registrados</div>
+    <div class="vlist">${rows||'<div class="empty">Sin gastos aún</div>'}</div>
+  </div>`
+}
+function addGasto(){const d=$id('ga_desc')?.value.trim();const m=parseFloat($id('ga_monto')?.value);if(!d||!m)return;D.gastos.unshift({id:uid(),desc:d,monto:m,fecha:$id('ga_fecha')?.value||today()});save();render()}
+window.delGasto=(id)=>{D.gastos=D.gastos.filter(x=>x.id!==id);save();render()}
+
+/* ── BALANCE ── */
+function renderBal(){
+  const ing=D.ingresos.reduce((s,i)=>s+Number(i.monto),0)
+  const gas=D.gastos.reduce((s,g)=>s+Number(g.monto),0)
+  const net=ing-gas;const por=net/3
+  const cls=net>=0?'gold':'red'
+  return `<div class="pgtitle">📈 Balance</div>
+  <div class="balcard green"><div class="bl">Total ingresos</div><div class="bv">${fmt(ing)}</div></div>
+  <div class="balcard red"><div class="bl">Total gastos</div><div class="bv">−${fmt(gas)}</div></div>
+  <div class="balcard ${cls}"><div class="bl">Ganancia neta</div><div class="bv">${net>=0?'+':''}${fmt(net)}</div></div>
+  <div class="card">
+    <div class="ctitle">División entre 3 socias</div>
+    <div class="socias">
+      ${[1,2,3].map(i=>`<div class="socia"><div class="soc-lbl">Socia ${i}</div><div class="soc-val" style="color:${por>=0?'#047857':'#b91c1c'}">${fmt(por)}</div></div>`).join('')}
+    </div>
+  </div>`
+}
+
+/* ── HISTORIAL ── */
+function renderHis(){
+  const rows=D.ciclos.map((c,i)=>`<div class="cicloitem" onclick="toggleCiclo(${i})">
+    <div class="ciclo-hdr">
+      <div><div class="ciclo-name">${h(c.nombre)}</div><div class="ciclo-fecha">${c.fecha}</div></div>
+      <div class="ciclo-nums">
+        <span style="color:#047857">+${fmt(c.ingresos)}</span>
+        <span style="color:#b91c1c">−${fmt(c.gastos)}</span>
+        <span style="color:${c.neta>=0?'#047857':'#b91c1c'}">${c.neta>=0?'=+':'='}${fmt(c.neta)}</span>
+      </div>
+    </div>
+    <div id="cdet_${i}" style="display:none" class="ciclo-det">
+      <div>Ventas registradas: <strong>${c.ventas}</strong> · Pedidos cerrados: <strong>${c.pedidosCerrados}</strong></div>
+      <div>Por socia (÷3): <strong>${fmt(c.neta/3)}</strong></div>
+    </div>
+  </div>`).join('')
+  return `<div class="pgtitle">🗂 Historial</div>
+  <div class="ciclo-list">${rows||'<div class="empty">Aún no hay ciclos cerrados</div>'}</div>`
+}
+window.toggleCiclo=(i)=>{const el=$id('cdet_'+i);if(el)el.style.display=el.style.display==='none'?'block':'none'}
+
+/* ── CERRAR CICLO ── */
+window.openCiclo=()=>{
+  const wrap=document.createElement('div')
+  wrap.className='modal-wrap';wrap.id='ciclo-modal'
+  wrap.innerHTML=`<div class="modal">
+    <h3>🍋 Cerrar ciclo</h3>
+    <p>Se guardará un resumen con todas las ventas, ingresos y gastos. Los registros del nuevo período comenzarán desde cero.</p>
+    <div class="row" style="margin-bottom:10px"><input id="cm_nom" type="text" value="Ciclo ${new Date().toLocaleDateString('es-VE')}" placeholder="Nombre del ciclo"></div>
+    <label class="chk-row"><input type="checkbox" id="cm_reset"> Resetear inventario a 0</label>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeCiclo()">Cancelar</button>
+      <button class="btn primary" onclick="confirmarCiclo()">✓ Confirmar cierre</button>
+    </div>
+  </div>`
+  document.getElementById('app').appendChild(wrap)
+}
+window.closeCiclo=()=>{const m=$id('ciclo-modal');if(m)m.remove()}
+window.confirmarCiclo=()=>{
+  const nom=$id('cm_nom')?.value||'Ciclo sin nombre'
+  const reset=$id('cm_reset')?.checked
+  const ing=D.ingresos.reduce((s,i)=>s+Number(i.monto),0)
+  const gas=D.gastos.reduce((s,g)=>s+Number(g.monto),0)
+  D.ciclos.unshift({nombre:nom,fecha:new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric'}),ingresos:ing,gastos:gas,neta:ing-gas,ventas:D.ventas.length,pedidosCerrados:D.pedidos.filter(x=>x.entregado).length})
+  D.ingresos=[];D.gastos=[];D.ventas=[];D.pedidos=[]
+  if(reset)D.productos.forEach(p=>p.cantidad=0)
+  save();closeCiclo();tab='his';render()
+}
+
+render()
+</script>
+</body>
+</html>
