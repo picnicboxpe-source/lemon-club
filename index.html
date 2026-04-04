@@ -351,7 +351,7 @@ hr.div{border:none;border-top:1px solid var(--bd);margin:10px 0}
       <div class="login-field" style="margin-top:4px">
         <label>Contraseña</label>
         <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"
-          onkeydown="if(event.key='Enter')doLogin()">
+          onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <div id="l-err" style="display:none" class="login-err"></div>
       <button class="btn primary full" onclick="doLogin()" style="font-size:14px;padding:11px">
@@ -425,8 +425,8 @@ hr.div{border:none;border-top:1px solid var(--bd);margin:10px 0}
 // ═══════════════════════════════════════════════════════════
 //  ✏️  SOLO EDITA ESTAS 2 LÍNEAS — pega tus datos de Supabase
 // ═══════════════════════════════════════════════════════════
-const SUPABASE_URL = 'https://pkwvblemylxbtugdygoh.supabase.co'           // https://xxx.supabase.co
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3ZibGVteWx4YnR1Z2R5Z29oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjc4MzAsImV4cCI6MjA5MDgwMzgzMH0.hyGzSiQm6SkkW7MVlS-lqcD1Iz9BPugXZ0ypY6EKvqI'      // eyJ...
+const SUPABASE_URL = 'PEGA_TU_URL_AQUI'           // https://xxx.supabase.co
+const SUPABASE_KEY = 'PEGA_TU_ANON_KEY_AQUI'      // eyJ...
 
 // ═══════════════════════════════════════════════════════════
 //  USUARIOS Y CONTRASEÑAS — edita a tu gusto
@@ -436,7 +436,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const USERS = [
   { nombre:'Damaris',  pass:'lemon123', rol:'admin',    icon:'🌸', color:'#be185d' },
   { nombre:'Giu',      pass:'lemon123', rol:'admin',    icon:'⭐', color:'#7c3aed' },
-  { nombre:'Jonathan', pass:'', rol:'admin', icon:'🌿', color:'#0369a1' },
+  { nombre:'Jonathan', pass:'lemon123', rol:'vendedor', icon:'🌿', color:'#0369a1' },
 ]
 
 // SOCIOS → usa USERS definido arriba
@@ -509,8 +509,8 @@ let selectedUser = null   // usuario seleccionado en el login
 function renderLoginUsers() {
   const c = $('user-btns'); if (!c) return
   c.innerHTML = USERS.map((u,i) => `
-    <button onclick="selectUser(${i})" id="ubtn_${i}"
-      style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--bd);border-radius:10px;background:var(--w);cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;transition:all .15s;text-align:left">
+    <button type="button" onclick="selectUser(${i})" id="ubtn_${i}"
+      style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--bd);border-radius:10px;background:var(--w);cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;transition:all .15s;text-align:left;width:100%">
       <span style="font-size:20px">${u.icon}</span>
       <span>${u.nombre}</span>
       <span style="font-size:11px;color:var(--g2);margin-left:auto">${u.rol}</span>
@@ -523,7 +523,7 @@ window.selectUser = i => {
     b.style.borderColor = j===i ? 'var(--yb)' : 'var(--bd)'
     b.style.background  = j===i ? 'var(--yl)' : 'var(--w)'
   })
-  $('l-pass')?.focus()
+  setTimeout(() => $('l-pass')?.focus(), 50)
 }
 
 window.doLogin = () => {
