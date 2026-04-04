@@ -425,8 +425,8 @@ hr.div{border:none;border-top:1px solid var(--bd);margin:10px 0}
 // ═══════════════════════════════════════════════════════════
 //  ✏️  SOLO EDITA ESTAS 2 LÍNEAS — pega tus datos de Supabase
 // ═══════════════════════════════════════════════════════════
-const SUPABASE_URL = 'https://pkwvblemylxbtugdygoh.supabase.co'           // https://xxx.supabase.co
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3ZibGVteWx4YnR1Z2R5Z29oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjc4MzAsImV4cCI6MjA5MDgwMzgzMH0.hyGzSiQm6SkkW7MVlS-lqcD1Iz9BPugXZ0ypY6EKvqI'      // eyJ...
+const SUPABASE_URL = 'PEGA_TU_URL_AQUI'           // https://xxx.supabase.co
+const SUPABASE_KEY = 'PEGA_TU_ANON_KEY_AQUI'      // eyJ...
 
 // ═══════════════════════════════════════════════════════════
 //  USUARIOS Y CONTRASEÑAS — edita a tu gusto
@@ -893,10 +893,13 @@ window.addVenta = async() => {
   if(!pid){ if(errEl) errEl.innerHTML='<div class="err-box">⚠️ Selecciona un producto</div>'; return }
   const p=D.productos.find(x=>x.id===pid)
   const qty=parseInt($('v_q')?.value)||1
+  const monto=parseFloat($('v_m')?.value)||0
+  const fecha=$('v_f')?.value||td()
   if(!p) return
   if(p.cantidad<qty){ if(errEl) errEl.innerHTML=`<div class="err-box">⚠️ Stock insuficiente. Solo hay ${p.cantidad}.</div>`; return }
-  await ins('ventas',{id:uid(),producto_id:pid,producto_nombre:p.nombre,cantidad:qty,monto:parseFloat($('v_m')?.value)||0,ciudad:$('v_c')?.value||'Caracas',direccion:$('v_d')?.value||'',fecha:$('v_f')?.value||td()})
+  await ins('ventas',{id:uid(),producto_id:pid,producto_nombre:p.nombre,cantidad:qty,monto,ciudad:$('v_c')?.value||'Caracas',direccion:$('v_d')?.value||'',fecha})
   await upd('productos',pid,{cantidad:p.cantidad-qty})
+  if(monto>0) await ins('ingresos',{id:uid(),descripcion:'Venta: '+p.nombre+' ×'+qty,monto,fecha})
   toast('✅ Venta registrada'); render()
 }
 window.saveVenta = async id => {
