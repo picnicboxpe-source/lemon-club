@@ -345,25 +345,24 @@ hr.div{border:none;border-top:1px solid var(--bd);margin:10px 0}
     </div>
     <div class="login-form">
       <div class="login-field">
-        <label>Contraseña</label>
-        <input type="password" id="l-pass" placeholder="••••••••"
-          autocomplete="current-password"
-          onkeydown="if(event.key==='Enter')doLogin()"
-          style="font-size:16px;letter-spacing:2px">
-      </div>
-      <div class="login-field" style="margin-top:4px">
         <label>¿Quién eres?</label>
         <div id="user-btns" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
       </div>
+      <div class="login-field" style="margin-top:8px">
+        <label>Contraseña</label>
+        <input type="password" id="l-pass" placeholder="••••••••"
+          autocomplete="off"
+          style="font-size:15px;letter-spacing:2px"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
       <div id="l-err" style="display:none" class="login-err"></div>
-      <button type="button" class="btn primary full" onclick="doLogin()" style="font-size:14px;padding:11px">
+      <button type="button" class="btn primary full" onclick="doLogin()" style="font-size:14px;padding:11px;margin-top:8px">
         Entrar al panel
       </button>
-    </div></div>
+    </div>
     <div class="login-footer">Lemon Club &copy; 2025 · Solo para el equipo</div>
   </div>
 </div>
-
 <!-- ═══ APP ═══ -->
 <div id="app-screen">
   <!-- Header -->
@@ -544,10 +543,12 @@ window.doLogout = () => {
   localStorage.removeItem('lc_session')
   stopPolling()
   currentUser = null
-  $('login-screen').style.display = 'flex'
-  $('app-screen').classList.remove('visible')
   selectedUser = null
-  $('l-pass').value = ''
+  $('app-screen').classList.remove('visible')
+  $('login-screen').style.display = 'flex'
+  // Reset form cleanly
+  const p = $('l-pass'); if(p) p.value = ''
+  const e = $('l-err'); if(e) e.style.display = 'none'
   renderLoginUsers()
 }
 
