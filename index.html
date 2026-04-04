@@ -523,16 +523,20 @@ window.selectUser = i => {
     b.style.borderColor = j===i ? 'var(--yb)' : 'var(--bd)'
     b.style.background  = j===i ? 'var(--yl)' : 'var(--w)'
   })
-  setTimeout(()=>{ const p=$('l-pass'); if(p){p.focus(); p.removeAttribute('readonly')} },80)
+  // no focus stealing — user can type password before or after selecting name
 }
 
 window.doLogin = () => {
   const err = $('l-err'); err.style.display='none'
+  const pass = $('l-pass')?.value || ''
+  console.log('[Login] selectedUser:', selectedUser?.nombre, '| pass length:', pass.length)
   if (!selectedUser) { err.textContent='Selecciona tu nombre primero'; err.style.display='block'; return }
-  const pass = $('l-pass')?.value
   if (!pass) { err.textContent='Escribe tu contraseña'; err.style.display='block'; return }
-  if (pass !== selectedUser.pass) { err.textContent='Contraseña incorrecta'; err.style.display='block'; $('l-pass').value=''; return }
-  // Login ok
+  if (pass !== selectedUser.pass) {
+    console.log('[Login] wrong pass. Expected:', selectedUser.pass, 'Got:', pass)
+    err.textContent='Contraseña incorrecta'; err.style.display='block'; $('l-pass').value=''; return
+  }
+  console.log('[Login] OK — opening app as', selectedUser.nombre)
   currentUser = selectedUser
   isAdmin = selectedUser.rol === 'admin'
   localStorage.setItem('lc_session', JSON.stringify({ nombre:selectedUser.nombre, ts: Date.now() }))
