@@ -2,95 +2,155 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Lemon App Simple</title>
+<title>Lemon Club App</title>
 <style>
-body { font-family: Arial; background:#f5f5f5; margin:0; }
-.container { max-width:400px; margin:60px auto; background:white; padding:20px; border-radius:10px; }
-input, button { width:100%; padding:10px; margin:5px 0; }
+body { font-family: Arial; margin:0; background:#f4f4f4; }
+header { background:black; color:white; padding:15px; text-align:center; }
+nav { display:flex; justify-content:space-around; background:white; padding:10px; }
+nav button { background:none; border:none; font-weight:bold; }
+.container { padding:15px; }
 .hidden { display:none; }
-.item { padding:8px; border-bottom:1px solid #ddd; }
+.card { background:white; padding:15px; margin-bottom:10px; border-radius:10px; }
+input, button { padding:10px; margin:5px 0; width:100%; }
 </style>
 </head>
 <body>
 
+<header>🍋 Lemon Club</header>
+
 <div id="login" class="container">
-<h2>Login</h2>
-<input id="user" placeholder="Usuario">
-<input id="pass" placeholder="Clave" type="password">
-<button onclick="login()">Ingresar</button>
-<p id="error" style="color:red;"></p>
+  <div class="card">
+    <h3>Login</h3>
+    <input id="user" placeholder="Usuario">
+    <input id="pass" type="password" placeholder="Clave">
+    <button onclick="login()">Ingresar</button>
+    <p id="error" style="color:red;"></p>
+  </div>
 </div>
 
-<div id="app" class="container hidden">
-<h2>Inventario</h2>
-<input id="producto" placeholder="Producto">
-<input id="cantidad" placeholder="Cantidad" type="number">
-<button onclick="agregar()">Agregar</button>
+<div id="app" class="hidden">
+  <nav>
+    <button onclick="show('ventas')">Ventas</button>
+    <button onclick="show('inventario')">Inventario</button>
+    <button onclick="show('finanzas')">Finanzas</button>
+    <button onclick="show('balance')">Balance</button>
+    <button onclick="show('historial')">Historial</button>
+  </nav>
 
-<h3>Lista</h3>
-<div id="lista"></div>
+  <div class="container">
 
-<button onclick="logout()">Cerrar sesión</button>
+    <div id="inventario" class="section">
+      <div class="card">
+        <h3>Inventario</h3>
+        <input id="prod" placeholder="Producto">
+        <input id="stock" type="number" placeholder="Cantidad">
+        <button onclick="addInv()">Agregar</button>
+      </div>
+      <div id="listaInv"></div>
+    </div>
+
+    <div id="ventas" class="section hidden">
+      <div class="card">
+        <h3>Registrar venta</h3>
+        <input id="ventaProd" placeholder="Producto">
+        <input id="ventaCant" type="number" placeholder="Cantidad">
+        <button onclick="venta()">Vender</button>
+      </div>
+      <div id="listaVentas"></div>
+    </div>
+
+    <div id="finanzas" class="section hidden">
+      <div class="card">
+        <h3>Total ventas</h3>
+        <h2 id="total">S/ 0</h2>
+      </div>
+    </div>
+
+    <div id="balance" class="section hidden">
+      <div class="card">
+        <h3>Balance</h3>
+        <p id="balanceText"></p>
+      </div>
+    </div>
+
+    <div id="historial" class="section hidden">
+      <div class="card">
+        <h3>Historial</h3>
+      </div>
+      <div id="hist"></div>
+    </div>
+
+  </div>
 </div>
 
 <script>
-const CLAVE = "1234"; // clave compartida simple
-let inventario = JSON.parse(localStorage.getItem("inv") || "[]");
+const CLAVE = "1234";
 
-function login() {
-  const user = document.getElementById("user").value;
-  const pass = document.getElementById("pass").value;
+let inventario = JSON.parse(localStorage.getItem("inv")||"[]");
+let ventas = JSON.parse(localStorage.getItem("ventas")||"[]");
 
-  if (!user || !pass) {
-    document.getElementById("error").innerText = "Completa todos los campos";
+function login(){
+  let u = user.value;
+  let p = pass.value;
+  if(p===CLAVE){
+    loginDiv = document.getElementById("login");
+    appDiv = document.getElementById("app");
+    loginDiv.classList.add("hidden");
+    appDiv.classList.remove("hidden");
+    render();
+  } else {
+    error.innerText="Clave incorrecta";
+  }
+}
+
+function show(sec){
+  document.querySelectorAll(".section").forEach(s=>s.classList.add("hidden"));
+  document.getElementById(sec).classList.remove("hidden");
+}
+
+function addInv(){
+  inventario.push({nombre:prod.value, stock:parseInt(stock.value)});
+  localStorage.setItem("inv", JSON.stringify(inventario));
+  prod.value=""; stock.value="";
+  render();
+}
+
+function venta(){
+  let p = ventaProd.value;
+  let c = parseInt(ventaCant.value);
+
+  let item = inventario.find(i=>i.nombre===p);
+  if(!item || item.stock < c){
+    alert("Sin stock");
     return;
   }
 
-  if (pass === CLAVE) {
-    document.getElementById("login").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
-    render();
-  } else {
-    document.getElementById("error").innerText = "Clave incorrecta";
-  }
-}
-
-function logout() {
-  location.reload();
-}
-
-function agregar() {
-  const producto = document.getElementById("producto").value;
-  const cantidad = parseInt(document.getElementById("cantidad").value);
-
-  if (!producto || !cantidad) return;
-
-  inventario.push({ producto, cantidad });
+  item.stock -= c;
+  ventas.push({nombre:p, cantidad:c});
   localStorage.setItem("inv", JSON.stringify(inventario));
-
-  document.getElementById("producto").value = "";
-  document.getElementById("cantidad").value = "";
+  localStorage.setItem("ventas", JSON.stringify(ventas));
 
   render();
 }
 
-function eliminar(index) {
-  inventario.splice(index, 1);
-  localStorage.setItem("inv", JSON.stringify(inventario));
-  render();
-}
+function render(){
+  listaInv.innerHTML="";
+  inventario.forEach(i=>{
+    listaInv.innerHTML += `<div class='card'>${i.nombre} - ${i.stock}</div>`;
+  });
 
-function render() {
-  const lista = document.getElementById("lista");
-  lista.innerHTML = "";
+  listaVentas.innerHTML="";
+  ventas.forEach(v=>{
+    listaVentas.innerHTML += `<div class='card'>${v.nombre} - ${v.cantidad}</div>`;
+  });
 
-  inventario.forEach((item, i) => {
-    lista.innerHTML += `
-      <div class="item">
-        ${item.producto} - ${item.cantidad}
-        <button onclick="eliminar(${i})">Eliminar</button>
-      </div>
-    `;
+  let total = ventas.reduce((a,b)=>a + b.cantidad*10,0);
+  document.getElementById("total").innerText="S/ "+total;
+  document.getElementById("balanceText").innerText="Ingresos: S/ "+total;
+
+  hist.innerHTML="";
+  ventas.forEach(v=>{
+    hist.innerHTML += `<div class='card'>Venta: ${v.nombre}</div>`;
   });
 }
 </script>
