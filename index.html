@@ -425,8 +425,8 @@ hr.div{border:none;border-top:1px solid var(--bd);margin:10px 0}
 // ═══════════════════════════════════════════════════════════
 //  ✏️  SOLO EDITA ESTAS 2 LÍNEAS — pega tus datos de Supabase
 // ═══════════════════════════════════════════════════════════
-const SUPABASE_URL = 'https://pkwvblemylxbtugdygoh.supabase.co'           // https://xxx.supabase.co
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3ZibGVteWx4YnR1Z2R5Z29oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjc4MzAsImV4cCI6MjA5MDgwMzgzMH0.hyGzSiQm6SkkW7MVlS-lqcD1Iz9BPugXZ0ypY6EKvqI'      // eyJ...
+const SUPABASE_URL = 'https://pkwvblemylxbtugdygoh.supabase.co'
+const SUPABASE_KEY = 'PEGA_TU_ANON_KEY_AQUI'      // eyJ...
 
 // ═══════════════════════════════════════════════════════════
 //  USUARIOS Y CONTRASEÑAS — edita a tu gusto
@@ -509,8 +509,8 @@ let selectedUser = null   // usuario seleccionado en el login
 function renderLoginUsers() {
   const c = $('user-btns'); if (!c) return
   c.innerHTML = USERS.map((u,i) => `
-    <button onclick="selectUser(${i})" id="ubtn_${i}"
-      style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--bd);border-radius:10px;background:var(--w);cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;transition:all .15s;text-align:left">
+    <button type="button" onclick="selectUser(${i})" id="ubtn_${i}"
+      style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--bd);border-radius:10px;background:var(--w);cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;transition:all .15s;text-align:left;width:100%">
       <span style="font-size:20px">${u.icon}</span>
       <span>${u.nombre}</span>
       <span style="font-size:11px;color:var(--g2);margin-left:auto">${u.rol}</span>
@@ -523,7 +523,7 @@ window.selectUser = i => {
     b.style.borderColor = j===i ? 'var(--yb)' : 'var(--bd)'
     b.style.background  = j===i ? 'var(--yl)' : 'var(--w)'
   })
-  $('l-pass')?.focus()
+  setTimeout(()=>{ const p=$('l-pass'); if(p){p.focus(); p.removeAttribute('readonly')} },80)
 }
 
 window.doLogin = () => {
@@ -562,20 +562,26 @@ async function loadAll() {
 }
 
 async function ins(table, row) {
+  if (!sb) { toast('⚠️ Sin conexión'); return { data:null, error:'no-sb' } }
   const { data, error } = await sb.from(table).insert(row).select().single()
-  if (!error && data) D[table] = [data, ...D[table]]
+  if (error) { toast('⚠️ Error al guardar: ' + (error.message||error.code||'revisa Supabase')); console.error(table, error) }
+  if (!error && data) { D[table] = [data, ...D[table]]; render() }
   return { data, error }
 }
 
 async function upd(table, id, changes) {
+  if (!sb) { toast('⚠️ Sin conexión'); return { data:null, error:'no-sb' } }
   const { data, error } = await sb.from(table).update(changes).eq('id',id).select().single()
-  if (!error && data) D[table] = D[table].map(r => r.id===id ? data : r)
+  if (error) { toast('⚠️ Error al actualizar: ' + (error.message||error.code)); console.error(table, error) }
+  if (!error && data) { D[table] = D[table].map(r => r.id===id ? data : r); render() }
   return { data, error }
 }
 
 async function del(table, id) {
+  if (!sb) { toast('⚠️ Sin conexión'); return { error:'no-sb' } }
   const { error } = await sb.from(table).delete().eq('id',id)
-  if (!error) D[table] = D[table].filter(r => r.id!==id)
+  if (error) { toast('⚠️ Error al eliminar: ' + (error.message||error.code)); console.error(table, error) }
+  if (!error) { D[table] = D[table].filter(r => r.id!==id); render() }
   return { error }
 }
 
@@ -586,6 +592,11 @@ async function del(table, id) {
 
 const POLL_INTERVAL = 3000   // ms entre cada chequeo
 const TABLES = ['categorias','productos','ventas','pedidos','ingresos','gastos','ciclos']
+
+function userIsTyping() {
+  const el = document.activeElement
+  return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')
+}
 
 async function pollOnce() {
   if (!sb) return
@@ -614,18 +625,20 @@ async function pollOnce() {
       changed = true
     } catch(e) { /* red cortada, se reintenta en siguiente ciclo */ }
 
-    // ── Detectar eliminaciones (conteo rápido) ──
+    // ── Eliminaciones: resincronizar solo si el conteo es válido y mayor que 0 ──
     try {
-      const { count } = await sb.from(table).select('*',{count:'exact',head:true})
-      if (typeof count === 'number' && count < D[table].length) {
-        // Hay menos filas en BD que en memoria → resincronizar tabla completa
-        const { data: full } = await sb.from(table).select('*').order('created_at',{ascending:false})
-        if (full) { D[table] = full; changed = true }
+      const { count, error:ce } = await sb.from(table).select('*',{count:'exact',head:true})
+      // Solo actuar si: no hay error, el conteo es un número positivo real,
+      // y hay una diferencia real (al menos 1 fila menos)
+      if (!ce && typeof count === 'number' && count > 0 && count < D[table].length) {
+        const { data: full, error: fe } = await sb.from(table).select('*').order('created_at',{ascending:false})
+        // Solo reemplazar si la descarga fue exitosa Y tiene datos
+        if (!fe && full && full.length > 0) { D[table] = full; changed = true }
       }
     } catch(e) {}
   }
 
-  if (changed) render()
+  if (changed && !userIsTyping()) render()
 }
 
 function startPolling() {
