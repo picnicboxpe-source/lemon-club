@@ -345,19 +345,21 @@ hr.div{border:none;border-top:1px solid var(--bd);margin:10px 0}
     </div>
     <div class="login-form">
       <div class="login-field">
+        <label>Contraseña</label>
+        <input type="password" id="l-pass" placeholder="••••••••"
+          autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLogin()"
+          style="font-size:16px;letter-spacing:2px">
+      </div>
+      <div class="login-field" style="margin-top:4px">
         <label>¿Quién eres?</label>
         <div id="user-btns" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
       </div>
-      <div class="login-field" style="margin-top:4px">
-        <label>Contraseña</label>
-        <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"
-          onkeydown="if(event.key='Enter')doLogin()">
-      </div>
       <div id="l-err" style="display:none" class="login-err"></div>
-      <button class="btn primary full" onclick="doLogin()" style="font-size:14px;padding:11px">
+      <button type="button" class="btn primary full" onclick="doLogin()" style="font-size:14px;padding:11px">
         Entrar al panel
       </button>
-    </div>
+    </div></div>
     <div class="login-footer">Lemon Club &copy; 2025 · Solo para el equipo</div>
   </div>
 </div>
@@ -449,7 +451,7 @@ let sb = null
 let currentUser = null   // { nombre, rol, icon, color }
 let isAdmin = false
 let D = { categorias:[], productos:[], ventas:[], pedidos:[], ingresos:[], gastos:[], ciclos:[] }
-let tab = 'ped'
+let tab = 'ven'
 let catOpen = {}
 let secOpen = {}
 let editing = {}
@@ -459,7 +461,6 @@ let pollTimer = null
 let lastPollAt = {}   // { table: ISO string } — timestamps de último registro conocido
 
 const TABS = [
-  { id:'ped',  icon:'📋', label:'Pedidos'    },
   { id:'ven',  icon:'💰', label:'Ventas'     },
   { id:'inv',  icon:'📦', label:'Inventario' },
   { id:'fin',  icon:'📊', label:'Finanzas'   },
@@ -668,7 +669,7 @@ function render() {
     `<span class="ntab-ico">${t.icon}</span>${t.label}</button>`
   ).join('')
   // page
-  const pages = { ped:pgPed, ven:pgVen, inv:pgInv, fin:pgFin, inv2:pgInv2, bal:pgBal, his:pgHis }
+  const pages = { ven:pgVen, inv:pgInv, fin:pgFin, inv2:pgInv2, bal:pgBal, his:pgHis }
   $('main').innerHTML = (pages[tab]||pgInv)()
 }
 
@@ -855,7 +856,18 @@ function pgVen() {
     </div>`
   }).join('')
 
+    const hoyVen2=td()
+  const totalVentas=D.ventas.reduce((s,v)=>s+Number(v.monto||0),0)
+  const totalHoyVen=D.ventas.filter(v=>v.fecha===hoyVen2).reduce((s,v)=>s+Number(v.monto||0),0)
+  const cntHoyVen=D.ventas.filter(v=>v.fecha===hoyVen2).length
+  const pedPendCnt=D.pedidos.filter(p=>!p.entregado).length
   return `<div class="pg-title">💰 Ventas</div>
+  <div class="stats-row">
+    <div class="stat"><div class="stat-lbl">Total ventas</div><div class="stat-val gn">${fmt(totalVentas)}</div></div>
+    <div class="stat"><div class="stat-lbl">Hoy</div><div class="stat-val gn">${fmt(totalHoyVen)}</div></div>
+    <div class="stat"><div class="stat-lbl">Ventas hoy</div><div class="stat-val">${cntHoyVen}</div></div>
+    <div class="stat"><div class="stat-lbl">Pendientes</div><div class="stat-val" style="color:var(--wn)">${pedPendCnt}</div></div>
+  </div>
   ${sec('ven_new','➕','Registrar venta', ()=>`
     <div id="ven_err"></div>
     <div class="row">
@@ -887,7 +899,24 @@ function pgVen() {
       ${totalFil>0?`<span class="tag money" style="font-size:12px">Total: ${fmt(totalFil)}</span>`:''}
     </div>
     <div class="list">${rows||'<div class="empty">Sin ventas en este período</div>'}</div>`,
-    String(filtered.length))}`
+    String(filtered.length))}
+  ${(()=>{
+    const pendientes=D.pedidos.filter(x=>!x.entregado)
+    const entregados=D.pedidos.filter(x=>x.entregado)
+    const opts2=D.productos.map(p=>'<option value="'+p.id+'">'+h(p.nombre)+' ('+p.cantidad+')</option>').join('')
+    const rows_ped=D.pedidos.map(p=>{
+      const isPend=!p.entregado
+      if(editing['ped_'+p.id]) return '<div class="ped-row editing"><div style="flex:1;width:100%"><div class="row"><select id="ep_pr_'+p.id+'">'+D.productos.map(pr=>'<option value="'+pr.id+'"'+(pr.id===p.producto_id?' selected':'')+'>'+h(pr.nombre)+'</option>').join('')+'</select><input id="ep_q_'+p.id+'" type="number" value="'+p.cantidad+'" style="max-width:70px"><input id="ep_m_'+p.id+'" type="number" value="'+(p.monto||0)+'" placeholder="Monto $" style="max-width:100px"></div><div class="row"><input id="ep_cl_'+p.id+'" type="text" value="'+h(p.cliente||'')+'" placeholder="Cliente"><input id="ep_ci_'+p.id+'" type="text" value="'+h(p.ciudad||'')+'" placeholder="Ciudad"></div><input id="ep_di_'+p.id+'" type="text" value="'+h(p.direccion||'')+'" placeholder="Dirección" style="width:100%;margin-bottom:8px"><div class="edit-actions"><button class="btn sm ghost" onclick="cancelEdit('ped',''+p.id+'')">Cancelar</button><button class="btn sm primary" onclick="savePed(''+p.id+'')">Guardar</button></div></div></div>'
+      const border=isPend?'var(--wn)':'var(--gn)'
+      const stag=isPend?'<span class="tag pend" style="margin-left:4px">Pendiente</span>':'<span class="tag money" style="margin-left:4px">Entregado</span>'
+      const mtag=p.monto?'<span class="tag money" style="margin-left:6px">'+fmt(p.monto)+'</span>':''
+      const ftag=(p.created_at||'').slice(0,10)?'<span style="color:var(--g2);font-size:11px;margin-left:4px">'+fd((p.created_at||'').slice(0,10))+'</span>':''
+      const abtn=isPend?'<button class="btn sm success" onclick="entregarPed(''+p.id+'')">Entregar</button>':'<button class="btn sm" style="border-color:var(--wn);color:var(--wn)" onclick="reabrirPed(''+p.id+'')">Pendiente</button>'
+      const dbtn=isAdmin?'<button class="icon-btn" onclick="delPed(''+p.id+'')">&#128465;</button>':''
+      return '<div class="ped-row" style="border-left:3px solid '+border+'"><div class="ped-info"><div class="ped-prod">'+h(p.producto_nombre)+' x'+p.cantidad+' '+mtag+' '+stag+'</div><div class="ped-meta">'+(p.cliente?'&#128100; '+h(p.cliente)+'  ':'')+(p.ciudad?'&#128205; '+h(p.ciudad):'')+(p.direccion?' — '+h(p.direccion):'')+' '+ftag+'</div></div><div style="display:flex;gap:5px;align-items:center;flex-shrink:0"><button class="icon-btn" onclick="startEdit('ped',''+p.id+'')">&#9999;</button>'+abtn+' '+dbtn+'</div></div>'
+    }).join('')
+    return '<div class="sec" style="margin-top:0"><div class="sec-hdr" onclick="toggleSec('ped_panel')"><div class="sec-hdr-l"><span class="sec-ico">&#128203;</span><span class="sec-hdr-title">Pedidos</span><span style="background:var(--y);color:#111;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px">'+pendientes.length+' pendientes</span></div><span class="sec-chevron open">&#9660;</span></div><div class="sec-body" id="sb_ped_panel"><div class="stats-row" style="margin-bottom:12px"><div class="stat"><div class="stat-lbl">Total pedidos</div><div class="stat-val">'+D.pedidos.length+'</div></div><div class="stat"><div class="stat-lbl">Pendientes</div><div class="stat-val" style="color:var(--wn)">'+pendientes.length+'</div></div><div class="stat"><div class="stat-lbl">Entregados</div><div class="stat-val gn">'+entregados.length+'</div></div></div><div class="row"><select id="pd_p"><option value="">Seleccionar producto</option>'+opts2+'</select><input id="pd_q" type="number" min="1" value="1" style="max-width:70px" placeholder="Cant"><input id="pd_m" type="number" min="0" step="0.01" placeholder="Monto $" style="max-width:110px"></div><div class="row"><input id="pd_cl" type="text" placeholder="Cliente"><input id="pd_ci" type="text" placeholder="Ciudad"></div><input id="pd_di" type="text" placeholder="Dirección" style="width:100%;margin-bottom:6px"><p style="font-size:11px;color:var(--g);margin-bottom:8px">Stock se descuenta al crear. Al entregar se registra venta e ingreso.</p><button class="btn yellow full" onclick="addPed()">+ Crear pedido</button><hr class="div" style="margin-top:12px"><div class="list" style="margin-top:8px">'+( rows_ped||'<div class="empty">Sin pedidos aún</div>')+'</div></div></div>'
+  })()}`
 }
 
 window.setVFiltro = f => { ventaFiltro=f; render() }
