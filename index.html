@@ -343,23 +343,22 @@ hr.div{border:none;border-top:1px solid var(--bd);margin:10px 0}
       <h1>Lemon Club</h1>
       <p>Panel de gestión interno</p>
     </div>
-    <div class="login-form" id="login-form">
+    <div class="login-form">
       <div class="login-field">
-        <label>Correo electrónico</label>
-        <input type="email" id="l-email" placeholder="tu@correo.com" autocomplete="email">
+        <label>¿Quién eres?</label>
+        <div id="user-btns" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
       </div>
-      <div class="login-field">
+      <div class="login-field" style="margin-top:4px">
         <label>Contraseña</label>
-        <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password">
+        <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key='Enter')doLogin()">
       </div>
       <div id="l-err" style="display:none" class="login-err"></div>
-      <button class="btn primary full" id="l-btn" onclick="doLogin()" style="margin-top:4px;font-size:14px;padding:11px">
+      <button class="btn primary full" onclick="doLogin()" style="font-size:14px;padding:11px">
         Entrar al panel
       </button>
     </div>
-    <div class="login-footer">
-      Lemon Club &copy; 2025 · Acceso solo para el equipo
-    </div>
+    <div class="login-footer">Lemon Club &copy; 2025 · Solo para el equipo</div>
   </div>
 </div>
 
@@ -423,25 +422,31 @@ hr.div{border:none;border-top:1px solid var(--bd);margin:10px 0}
 //  CONFIG  ← pega aquí tus credenciales de Supabase
 //  (o déjalas así y úsalas desde el panel de setup)
 // ═══════════════════════════════════════════════════════
-const HARD_URL = 'https://pkwvblemylxbtugdygoh.supabase.co'
-const HARD_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3ZibGVteWx4YnR1Z2R5Z29oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjc4MzAsImV4cCI6MjA5MDgwMzgzMH0.hyGzSiQm6SkkW7MVlS-lqcD1Iz9BPugXZ0ypY6EKvqI'
-const SETUP_STORAGE_KEY = 'lc_sb_v3'
+// ═══════════════════════════════════════════════════════════
+//  ✏️  SOLO EDITA ESTAS 2 LÍNEAS — pega tus datos de Supabase
+// ═══════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://pkwvblemylxbtugdygoh.supabase.co'           // https://xxx.supabase.co
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3ZibGVteWx4YnR1Z2R5Z29oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjc4MzAsImV4cCI6MjA5MDgwMzgzMH0.hyGzSiQm6SkkW7MVlS-lqcD1Iz9BPugXZ0ypY6EKvqI'      // eyJ...
 
-// ═══════════════════════════════════════════════════════
-//  SOCIOS (nombres y colores del balance)
-// ═══════════════════════════════════════════════════════
-const SOCIOS = [
-  { nombre:'Damaris', icon:'🌸', color:'#be185d' },
-  { nombre:'Giu',     icon:'⭐', color:'#7c3aed' },
-  { nombre:'Jonathan',icon:'🌿', color:'#0369a1' },
+// ═══════════════════════════════════════════════════════════
+//  USUARIOS Y CONTRASEÑAS — edita a tu gusto
+//  rol: 'admin' → puede eliminar y cerrar ciclo
+//  rol: 'vendedor' → puede ver y registrar todo
+// ═══════════════════════════════════════════════════════════
+const USERS = [
+  { nombre:'Damaris',  pass:'lemon123', rol:'admin',    icon:'🌸', color:'#be185d' },
+  { nombre:'Giu',      pass:'lemon123', rol:'admin',    icon:'⭐', color:'#7c3aed' },
+  { nombre:'Jonathan', pass:'lemon123', rol:'admin', icon:'🌿', color:'#0369a1' },
 ]
+
+// SOCIOS → usa USERS definido arriba
+const SOCIOS = USERS
 
 // ═══════════════════════════════════════════════════════
 //  GLOBALS
 // ═══════════════════════════════════════════════════════
 let sb = null
-let currentUser = null
-let currentProfile = null
+let currentUser = null   // { nombre, rol, icon, color }
 let isAdmin = false
 let D = { categorias:[], productos:[], ventas:[], pedidos:[], ingresos:[], gastos:[], ciclos:[] }
 let tab = 'inv'
@@ -483,57 +488,66 @@ function toast(msg) {
 // ═══════════════════════════════════════════════════════
 //  SUPABASE INIT
 // ═══════════════════════════════════════════════════════
-function getSbConfig() {
-  if (HARD_URL !== 'SUPABASE_URL_AQUI') return { url:HARD_URL, key:HARD_KEY }
-  try { const s=JSON.parse(localStorage.getItem(SETUP_STORAGE_KEY)||'null'); return s } catch { return null }
-}
-function saveConfig(url,key) { localStorage.setItem(SETUP_STORAGE_KEY,JSON.stringify({url,key})) }
-
-function initSb(url, key) {
+function initSb() {
+  if (SUPABASE_URL === 'PEGA_TU_URL_AQUI') {
+    $('l-err').textContent = '⚠️ Abre index.html y pega tu URL y Key de Supabase (líneas 1 y 2 del script)'
+    $('l-err').style.display = 'block'
+    return false
+  }
   try {
     const { createClient } = supabase
-    sb = createClient(url, key, { auth:{ persistSession:true, autoRefreshToken:true } })
+    sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ persistSession:false } })
     return true
   } catch(e) { console.error(e); return false }
-}
-
-window.applySetup = () => {
-  const url = $('sb-url')?.value.trim()
-  const key = $('sb-key')?.value.trim()
-  if (!url||!key) { toast('Ingresa URL y Key'); return }
-  saveConfig(url,key)
-  location.reload()
 }
 
 // ═══════════════════════════════════════════════════════
 //  AUTH
 // ═══════════════════════════════════════════════════════
-async function doLogin() {
-  const email = $('l-email')?.value.trim()
-  const pass  = $('l-pass')?.value
-  const btn   = $('l-btn')
-  const errEl = $('l-err')
-  errEl.style.display='none'
-  if (!email||!pass) { showLoginErr('Ingresa correo y contraseña'); return }
-  if (!sb) { showLoginErr('App no configurada. Recarga y configura Supabase primero.'); return }
-  btn.textContent='Entrando...'; btn.disabled=true
-  const { error } = await sb.auth.signInWithPassword({ email, password:pass })
-  btn.textContent='Entrar al panel'; btn.disabled=false
-  if (error) showLoginErr('Correo o contraseña incorrectos')
+let selectedUser = null   // usuario seleccionado en el login
+
+function renderLoginUsers() {
+  const c = $('user-btns'); if (!c) return
+  c.innerHTML = USERS.map((u,i) => `
+    <button onclick="selectUser(${i})" id="ubtn_${i}"
+      style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--bd);border-radius:10px;background:var(--w);cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;transition:all .15s;text-align:left">
+      <span style="font-size:20px">${u.icon}</span>
+      <span>${u.nombre}</span>
+      <span style="font-size:11px;color:var(--g2);margin-left:auto">${u.rol}</span>
+    </button>`).join('')
 }
 
-function showLoginErr(msg) {
-  const e=$('l-err'); e.textContent=msg; e.style.display='block'
+window.selectUser = i => {
+  selectedUser = USERS[i]
+  document.querySelectorAll('[id^=ubtn_]').forEach((b,j) => {
+    b.style.borderColor = j===i ? 'var(--yb)' : 'var(--bd)'
+    b.style.background  = j===i ? 'var(--yl)' : 'var(--w)'
+  })
+  $('l-pass')?.focus()
 }
 
-async function doLogout() {
-  if (sb) await sb.auth.signOut()
-  location.reload()
+window.doLogin = () => {
+  const err = $('l-err'); err.style.display='none'
+  if (!selectedUser) { err.textContent='Selecciona tu nombre primero'; err.style.display='block'; return }
+  const pass = $('l-pass')?.value
+  if (!pass) { err.textContent='Escribe tu contraseña'; err.style.display='block'; return }
+  if (pass !== selectedUser.pass) { err.textContent='Contraseña incorrecta'; err.style.display='block'; $('l-pass').value=''; return }
+  // Login ok
+  currentUser = selectedUser
+  isAdmin = selectedUser.rol === 'admin'
+  localStorage.setItem('lc_session', JSON.stringify({ nombre:selectedUser.nombre, ts: Date.now() }))
+  openApp()
 }
 
-async function loadProfile(userId) {
-  const { data } = await sb.from('perfiles').select('*').eq('id',userId).single()
-  return data
+window.doLogout = () => {
+  localStorage.removeItem('lc_session')
+  stopPolling()
+  currentUser = null
+  $('login-screen').style.display = 'flex'
+  $('app-screen').classList.remove('visible')
+  selectedUser = null
+  $('l-pass').value = ''
+  renderLoginUsers()
 }
 
 // ═══════════════════════════════════════════════════════
@@ -574,7 +588,7 @@ const POLL_INTERVAL = 3000   // ms entre cada chequeo
 const TABLES = ['categorias','productos','ventas','pedidos','ingresos','gastos','ciclos']
 
 async function pollOnce() {
-  if (!sb || !currentUser) return
+  if (!sb) return
   let changed = false
 
   for (const table of TABLES) {
@@ -1193,67 +1207,38 @@ window.confirmarCiclo = async() => {
 // ═══════════════════════════════════════════════════════
 //  BOOT
 // ═══════════════════════════════════════════════════════
-async function boot() {
-  const cfg = getSbConfig()
-  if (!cfg) {
-    // Show app screen with setup banner, not login
-    $('login-screen').style.display = 'none'
-    $('app-screen').classList.add('visible')
-    $('setup-banner').style.display = 'flex'
-    $('setup-banner').style.flexDirection = 'column'
-    $('nav').style.display = 'none'
-    $('main').innerHTML = '<div class="loading"><span style="font-size:32px">⚙️</span>Configura Supabase arriba para comenzar</div>'
-    return
-  }
-
-  const ok = initSb(cfg.url, cfg.key)
-  if (!ok) { toast('Error al inicializar Supabase'); return }
-
-  // Listen for auth state
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (session?.user) {
-      currentUser = session.user
-      // Load profile
-      const { data: prof } = await sb.from('perfiles').select('*').eq('id',session.user.id).single()
-      currentProfile = prof
-      isAdmin = prof?.rol === 'admin'
-
-      // Update header
-      const name = prof?.nombre || session.user.email?.split('@')[0] || '?'
-      $('u-name').textContent = name
-      $('u-role').textContent = isAdmin ? 'Admin' : 'Vendedor'
-      const av=$('u-av'); av.textContent=name[0].toUpperCase(); av.style.background=avatarColor(name)
-      if(isAdmin) $('btn-ciclo').style.display='flex'
-
-      // Load data & start polling
-      await loadAll()
-      startPolling()
-
-      // Show app
-      $('login-screen').style.display='none'
-      $('app-screen').classList.add('visible')
-      $('setup-banner').style.display='none'
-      render()
-    } else {
-      currentUser = null
-      $('login-screen').style.display='flex'
-      $('app-screen').classList.remove('visible')
-    }
-  })
-
-  // Check existing session
-  const { data:{ session } } = await sb.auth.getSession()
-  if (!session) {
-    // Show login
-    $('login-screen').style.display='flex'
-    $('app-screen').classList.remove('visible')
-  }
+async function openApp() {
+  if (!initSb()) return
+  // Header
+  const u = currentUser
+  $('u-name').textContent = u.nombre
+  $('u-role').textContent = u.rol === 'admin' ? 'Admin' : 'Vendedor'
+  const av = $('u-av'); av.textContent = u.nombre[0].toUpperCase(); av.style.background = u.color
+  $('btn-ciclo').style.display = isAdmin ? 'flex' : 'none'
+  // Load data
+  $('login-screen').style.display = 'none'
+  $('app-screen').classList.add('visible')
+  $('setup-banner').style.display = 'none'
+  $('main').innerHTML = '<div class="loading"><span class="spin">🍋</span>Cargando datos...</div>'
+  await loadAll()
+  startPolling()
+  render()
 }
 
-// Enter key on login
-document.addEventListener('keydown', e => {
-  if (e.key==='Enter' && $('login-screen').style.display!=='none') doLogin()
-})
+function boot() {
+  renderLoginUsers()
+  initSb()   // solo valida config, no bloquea
+  // Restaurar sesión de la última visita (expira en 8 horas)
+  try {
+    const s = JSON.parse(localStorage.getItem('lc_session')||'null')
+    if (s && Date.now() - s.ts < 8*60*60*1000) {
+      const u = USERS.find(x => x.nombre === s.nombre)
+      if (u) { selectedUser = u; currentUser = u; isAdmin = u.rol==='admin'; openApp(); return }
+    }
+  } catch(e) {}
+  // Mostrar login normal
+  $('login-screen').style.display = 'flex'
+}
 
 boot()
 </script>
