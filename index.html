@@ -425,8 +425,8 @@ hr.div{border:none;border-top:1px solid var(--bd);margin:10px 0}
 // ═══════════════════════════════════════════════════════════
 //  ✏️  SOLO EDITA ESTAS 2 LÍNEAS — pega tus datos de Supabase
 // ═══════════════════════════════════════════════════════════
-const SUPABASE_URL = 'https://pkwvblemylxbtugdygoh.supabase.co'           // https://xxx.supabase.co
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrd3ZibGVteWx4YnR1Z2R5Z29oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjc4MzAsImV4cCI6MjA5MDgwMzgzMH0.hyGzSiQm6SkkW7MVlS-lqcD1Iz9BPugXZ0ypY6EKvqI'      // eyJ...
+const SUPABASE_URL = 'PEGA_TU_URL_AQUI'           // https://xxx.supabase.co
+const SUPABASE_KEY = 'PEGA_TU_ANON_KEY_AQUI'      // eyJ...
 
 // ═══════════════════════════════════════════════════════════
 //  USUARIOS Y CONTRASEÑAS — edita a tu gusto
@@ -587,45 +587,33 @@ async function del(table, id) {
 const POLL_INTERVAL = 3000   // ms entre cada chequeo
 const TABLES = ['categorias','productos','ventas','pedidos','ingresos','gastos','ciclos']
 
+function userIsTyping() {
+  // Si el foco está en un input/select/textarea, NO rerenderizar
+  const el = document.activeElement
+  return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')
+}
+
 async function pollOnce() {
   if (!sb) return
   let changed = false
 
   for (const table of TABLES) {
     try {
-      // ── Detectar filas nuevas o actualizadas ──
-      const since = lastPollAt[table]
-      let q = sb.from(table).select('*').order('created_at',{ascending:false})
-      if (since) q = q.gt('updated_at', since)   // solo trae cambios recientes
+      const { data, error } = await sb.from(table).select('*').order('created_at',{ascending:false})
+      if (error || !data) continue
 
-      const { data, error } = await q
-      if (error || !data || data.length === 0) continue
-
-      // Actualizar timestamp al más reciente recibido
-      const maxTs = data.reduce((m,r) => r.updated_at > m ? r.updated_at : m, lastPollAt[table]||'')
-      if (maxTs) lastPollAt[table] = maxTs
-
-      // Mezclar con estado local
-      data.forEach(nw => {
-        const idx = D[table].findIndex(r => r.id === nw.id)
-        if (idx === -1) D[table] = [nw, ...D[table]]   // INSERT
-        else D[table][idx] = nw                          // UPDATE
-      })
-      changed = true
-    } catch(e) { /* red cortada, se reintenta en siguiente ciclo */ }
-
-    // ── Detectar eliminaciones (conteo rápido) ──
-    try {
-      const { count } = await sb.from(table).select('*',{count:'exact',head:true})
-      if (typeof count === 'number' && count < D[table].length) {
-        // Hay menos filas en BD que en memoria → resincronizar tabla completa
-        const { data: full } = await sb.from(table).select('*').order('created_at',{ascending:false})
-        if (full) { D[table] = full; changed = true }
+      // Comparar conteo y contenido con lo que tenemos en memoria
+      const localIds  = D[table].map(r => r.id).sort().join(',')
+      const remoteIds = data.map(r => r.id).sort().join(',')
+      if (localIds !== remoteIds) {
+        D[table] = data
+        changed = true
       }
     } catch(e) {}
   }
 
-  if (changed) render()
+  // Solo rerenderizar si cambiaron datos Y el usuario no está escribiendo
+  if (changed && !userIsTyping()) render()
 }
 
 function startPolling() {
