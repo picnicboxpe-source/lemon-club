@@ -436,7 +436,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const USERS = [
   { nombre:'Damaris',  pass:'lemon123', rol:'admin',    icon:'🌸', color:'#be185d' },
   { nombre:'Giu',      pass:'lemon123', rol:'admin',    icon:'⭐', color:'#7c3aed' },
-  { nombre:'Jonathan', pass:'lemon123', rol:'vendedor', icon:'🌿', color:'#0369a1' },
+  { nombre:'Jonathan', pass:'lemon123', rol:'admin', icon:'🌿', color:'#0369a1' },
 ]
 
 // SOCIOS → usa USERS definido arriba
@@ -863,7 +863,8 @@ function pgVen() {
       <input id="v_f" type="date" value="${td()}" style="max-width:150px">
     </div>
     <input id="v_d" type="text" placeholder="Dirección / referencia" style="width:100%;margin-bottom:8px">
-    <button class="btn primary full" onclick="addVenta()">✓ Registrar venta</button>`)}
+    <p style="font-size:11px;color:var(--g);margin-bottom:6px">💡 Para ventas directas (sin pedido previo). Descuenta stock e ingreso automáticamente.</p>
+    <button class="btn primary full" onclick="addVenta()">✓ Registrar venta directa</button>`)}
   ${sec('ven_list','📋','Historial de ventas', ()=>`
     <div class="filter-bar">
       <label>Filtrar:</label>
@@ -911,8 +912,13 @@ window.saveVenta = async id => {
 }
 window.delVenta = async id => {
   if(!isAdmin){ toast('Solo los administradores pueden eliminar'); return }
-  if(!confirm('¿Eliminar esta venta?')) return
-  await del('ventas',id); render()
+  if(!confirm('¿Eliminar esta venta? El stock se devolverá al inventario.')) return
+  const v=D.ventas.find(x=>x.id===id); if(!v) return
+  // Devolver stock
+  const p=D.productos.find(x=>x.id===v.producto_id)
+  if(p) await upd('productos',v.producto_id,{cantidad:p.cantidad+v.cantidad})
+  await del('ventas',id)
+  toast('🗑 Venta eliminada — stock repuesto'); render()
 }
 
 // ═══════════════════════════════════════════════════════
@@ -955,14 +961,16 @@ function pgPed() {
   ${sec('ped_new','➕','Nuevo pedido',()=>`
     <div class="row">
       <select id="pd_p"><option value="">— Producto —</option>${opts}</select>
-      <input id="pd_q" type="number" min="1" value="1" style="max-width:70px">
+      <input id="pd_q" type="number" min="1" value="1" style="max-width:70px" placeholder="Cant">
+      <input id="pd_m" type="number" min="0" step="0.01" placeholder="Monto $" style="max-width:110px">
     </div>
     <div class="row">
       <input id="pd_cl" type="text" placeholder="Cliente">
       <input id="pd_ci" type="text" placeholder="Ciudad">
     </div>
     <input id="pd_di" type="text" placeholder="Dirección" style="width:100%;margin-bottom:8px">
-    <button class="btn yellow full" onclick="addPed()">+ Agregar pendiente</button>`)}
+    <p style="font-size:11px;color:var(--g);margin-bottom:8px">⚡ Al crear el pedido se descuenta el stock. Al marcarlo Entregado se registra la venta y el ingreso.</p>
+    <button class="btn yellow full" onclick="addPed()">+ Crear pedido</button>`)}
   ${sec('ped_list','📋','Lista de pendientes',()=>`
     <div class="list">${rows||'<div class="empty" style="border-color:#6ee7b7;color:var(--gnd)">✅ ¡Sin pendientes! Todo entregado.</div>'}</div>`,
     String(pend.length))}`
@@ -971,8 +979,13 @@ function pgPed() {
 window.addPed = async() => {
   const pid=$('pd_p')?.value; if(!pid) return
   const p=D.productos.find(x=>x.id===pid)
-  await ins('pedidos',{id:uid(),producto_id:pid,producto_nombre:p?.nombre||'',cantidad:parseInt($('pd_q')?.value)||1,cliente:$('pd_cl')?.value||'',ciudad:$('pd_ci')?.value||'',direccion:$('pd_di')?.value||'',entregado:false})
-  toast('📦 Pedido agregado'); render()
+  const qty=parseInt($('pd_q')?.value)||1
+  const monto=parseFloat($('pd_m')?.value)||0
+  if(!p){ toast('⚠️ Producto no encontrado'); return }
+  if(p.cantidad<qty){ toast('⚠️ Stock insuficiente. Solo hay '+p.cantidad+' unidades.'); return }
+  await ins('pedidos',{id:uid(),producto_id:pid,producto_nombre:p.nombre,cantidad:qty,monto,cliente:$('pd_cl')?.value||'',ciudad:$('pd_ci')?.value||'',direccion:$('pd_di')?.value||'',entregado:false})
+  await upd('productos',pid,{cantidad:p.cantidad-qty})
+  toast('📦 Pedido creado — stock descontado'); render()
 }
 window.savePed = async id => {
   const p=D.pedidos.find(x=>x.id===id); if(!p) return
@@ -982,7 +995,17 @@ window.savePed = async id => {
   delete editing['ped_'+id]; toast('✅ Pedido actualizado'); render()
 }
 window.entregarPed = async id => {
-  await upd('pedidos',id,{entregado:true}); toast('✅ Marcado como entregado'); render()
+  const ped=D.pedidos.find(x=>x.id===id); if(!ped) return
+  const fecha=td()
+  // Marcar pedido como entregado
+  await upd('pedidos',id,{entregado:true})
+  // Crear venta automáticamente
+  await ins('ventas',{id:uid(),producto_id:ped.producto_id,producto_nombre:ped.producto_nombre,cantidad:ped.cantidad,monto:ped.monto||0,ciudad:ped.ciudad||'',direccion:ped.direccion||'',fecha})
+  // Registrar ingreso en Finanzas si tiene monto
+  if((ped.monto||0)>0){
+    await ins('ingresos',{id:uid(),descripcion:'Entrega: '+ped.producto_nombre+' ×'+ped.cantidad+(ped.cliente?' — '+ped.cliente:''),monto:ped.monto,fecha})
+  }
+  toast('✅ Entregado — venta e ingreso registrados'); render()
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1017,11 +1040,30 @@ function pgFin() {
     </div>`
   }).join('')
 
+  const hoy=td()
+  const totalHoy=D.ingresos.filter(i=>i.fecha===hoy).reduce((s,i)=>s+Number(i.monto),0)
+  // agrupar por fecha para desglose diario
+  const porFecha={}
+  D.ingresos.forEach(i=>{ const f=i.fecha||'sin fecha'; porFecha[f]=(porFecha[f]||0)+Number(i.monto) })
+  const fechasOrden=Object.keys(porFecha).sort((a,b)=>b.localeCompare(a))
+  const desglose=fechasOrden.slice(0,7).map(f=>`
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px">
+      <span style="color:var(--g)">${fd(f)}</span>
+      <span class="tag money">+${fmt(porFecha[f])}</span>
+    </div>`).join('')
   return `<div class="pg-title">📊 Finanzas</div>
   <div class="stats-row">
-    <div class="stat"><div class="stat-lbl">Total ingresos</div><div class="stat-val gn">${fmt(total)}</div></div>
+    <div class="stat"><div class="stat-lbl">Total acumulado</div><div class="stat-val gn">${fmt(total)}</div></div>
+    <div class="stat"><div class="stat-lbl">Hoy</div><div class="stat-val gn">${fmt(totalHoy)}</div></div>
     <div class="stat"><div class="stat-lbl">Registros</div><div class="stat-val">${D.ingresos.length}</div></div>
   </div>
+  ${fechasOrden.length>0?`<div class="sec" style="margin-bottom:12px">
+    <div class="sec-hdr" onclick="toggleSec('fin_dias')">
+      <div class="sec-hdr-l"><span class="sec-ico">📅</span><span class="sec-hdr-title">Ingresos por día (últimos 7 días)</span></div>
+      <span class="sec-chevron open">▼</span>
+    </div>
+    <div class="sec-body" id="sb_fin_dias" style="padding:8px 16px">${desglose}</div>
+  </div>`:''}
   ${sec('fin_new','➕','Registrar ingreso',()=>`
     <div class="row">
       <input id="fi_d" type="text" placeholder="Descripción (ej: Ventas del día)">
