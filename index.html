@@ -351,7 +351,7 @@ hr.div{border:none;border-top:1px solid var(--bd);margin:10px 0}
       <div class="login-field" style="margin-top:4px">
         <label>Contraseña</label>
         <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"
-          onkeydown="if(event.key==='Enter')doLogin()">
+          onkeydown="if(event.key='Enter')doLogin()">
       </div>
       <div id="l-err" style="display:none" class="login-err"></div>
       <button class="btn primary full" onclick="doLogin()" style="font-size:14px;padding:11px">
@@ -436,7 +436,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const USERS = [
   { nombre:'Damaris',  pass:'lemon123', rol:'admin',    icon:'🌸', color:'#be185d' },
   { nombre:'Giu',      pass:'lemon123', rol:'admin',    icon:'⭐', color:'#7c3aed' },
-  { nombre:'Jonathan', pass:'lemon123', rol:'admin', icon:'🌿', color:'#0369a1' },
+  { nombre:'Jonathan', pass:'lemon123', rol:'vendedor', icon:'🌿', color:'#0369a1' },
 ]
 
 // SOCIOS → usa USERS definido arriba
@@ -449,7 +449,7 @@ let sb = null
 let currentUser = null   // { nombre, rol, icon, color }
 let isAdmin = false
 let D = { categorias:[], productos:[], ventas:[], pedidos:[], ingresos:[], gastos:[], ciclos:[] }
-let tab = 'inv'
+let tab = 'ped'
 let catOpen = {}
 let secOpen = {}
 let editing = {}
@@ -459,11 +459,11 @@ let pollTimer = null
 let lastPollAt = {}   // { table: ISO string } — timestamps de último registro conocido
 
 const TABS = [
-  { id:'inv',  icon:'📦', label:'Inventario' },
+  { id:'ped',  icon:'📋', label:'Pedidos'    },
   { id:'ven',  icon:'💰', label:'Ventas'     },
-  { id:'ped',  icon:'⏳', label:'Pendientes' },
+  { id:'inv',  icon:'📦', label:'Inventario' },
   { id:'fin',  icon:'📊', label:'Finanzas'   },
-  { id:'inv2', icon:'💸', label:'Inversión'  },
+  { id:'inv2', icon:'💸', label:'Gastos'     },
   { id:'bal',  icon:'📈', label:'Balance'    },
   { id:'his',  icon:'🗂',  label:'Historial' },
 ]
@@ -490,18 +490,15 @@ function toast(msg) {
 // ═══════════════════════════════════════════════════════
 function initSb() {
   if (SUPABASE_URL === 'PEGA_TU_URL_AQUI') {
-    const err = $('l-err')
-    if (err) { err.textContent = '⚠️ Pega tu URL y Key de Supabase en el index.html'; err.style.display = 'block' }
+    $('l-err').textContent = '⚠️ Abre index.html y pega tu URL y Key de Supabase (líneas 1 y 2 del script)'
+    $('l-err').style.display = 'block'
     return false
   }
-  if (sb) return true   // ya inicializado, no recrear
   try {
     const { createClient } = supabase
-    sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false }
-    })
+    sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ persistSession:false } })
     return true
-  } catch(e) { console.error('Supabase init error:', e); return false }
+  } catch(e) { console.error(e); return false }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -512,8 +509,8 @@ let selectedUser = null   // usuario seleccionado en el login
 function renderLoginUsers() {
   const c = $('user-btns'); if (!c) return
   c.innerHTML = USERS.map((u,i) => `
-    <button type="button" onclick="selectUser(${i})" id="ubtn_${i}"
-      style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--bd);border-radius:10px;background:var(--w);cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;transition:all .15s;text-align:left;width:100%">
+    <button onclick="selectUser(${i})" id="ubtn_${i}"
+      style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid var(--bd);border-radius:10px;background:var(--w);cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;transition:all .15s;text-align:left">
       <span style="font-size:20px">${u.icon}</span>
       <span>${u.nombre}</span>
       <span style="font-size:11px;color:var(--g2);margin-left:auto">${u.rol}</span>
@@ -526,7 +523,7 @@ window.selectUser = i => {
     b.style.borderColor = j===i ? 'var(--yb)' : 'var(--bd)'
     b.style.background  = j===i ? 'var(--yl)' : 'var(--w)'
   })
-  setTimeout(() => $('l-pass')?.focus(), 50)
+  $('l-pass')?.focus()
 }
 
 window.doLogin = () => {
@@ -565,35 +562,20 @@ async function loadAll() {
 }
 
 async function ins(table, row) {
-  if (!sb) { toast('⚠️ Sin conexión a Supabase'); return { data:null, error:'no-sb' } }
   const { data, error } = await sb.from(table).insert(row).select().single()
-  if (error) {
-    console.error('INSERT error en', table, error)
-    toast('⚠️ Error al guardar: ' + (error.message || error.code || 'verifica permisos en Supabase'))
-  }
-  if (!error && data) { D[table] = [data, ...D[table]]; render() }
+  if (!error && data) D[table] = [data, ...D[table]]
   return { data, error }
 }
 
 async function upd(table, id, changes) {
-  if (!sb) { toast('⚠️ Sin conexión a Supabase'); return { data:null, error:'no-sb' } }
   const { data, error } = await sb.from(table).update(changes).eq('id',id).select().single()
-  if (error) {
-    console.error('UPDATE error en', table, error)
-    toast('⚠️ Error al actualizar: ' + (error.message || error.code))
-  }
-  if (!error && data) { D[table] = D[table].map(r => r.id===id ? data : r); render() }
+  if (!error && data) D[table] = D[table].map(r => r.id===id ? data : r)
   return { data, error }
 }
 
 async function del(table, id) {
-  if (!sb) { toast('⚠️ Sin conexión a Supabase'); return { error:'no-sb' } }
   const { error } = await sb.from(table).delete().eq('id',id)
-  if (error) {
-    console.error('DELETE error en', table, error)
-    toast('⚠️ Error al eliminar: ' + (error.message || error.code))
-  }
-  if (!error) { D[table] = D[table].filter(r => r.id!==id); render() }
+  if (!error) D[table] = D[table].filter(r => r.id!==id)
   return { error }
 }
 
@@ -605,33 +587,45 @@ async function del(table, id) {
 const POLL_INTERVAL = 3000   // ms entre cada chequeo
 const TABLES = ['categorias','productos','ventas','pedidos','ingresos','gastos','ciclos']
 
-function userIsTyping() {
-  // Si el foco está en un input/select/textarea, NO rerenderizar
-  const el = document.activeElement
-  return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')
-}
-
 async function pollOnce() {
   if (!sb) return
   let changed = false
 
   for (const table of TABLES) {
     try {
-      const { data, error } = await sb.from(table).select('*').order('created_at',{ascending:false})
-      if (error || !data) continue
+      // ── Detectar filas nuevas o actualizadas ──
+      const since = lastPollAt[table]
+      let q = sb.from(table).select('*').order('created_at',{ascending:false})
+      if (since) q = q.gt('updated_at', since)   // solo trae cambios recientes
 
-      // Comparar conteo y contenido con lo que tenemos en memoria
-      const localIds  = D[table].map(r => r.id).sort().join(',')
-      const remoteIds = data.map(r => r.id).sort().join(',')
-      if (localIds !== remoteIds) {
-        D[table] = data
-        changed = true
+      const { data, error } = await q
+      if (error || !data || data.length === 0) continue
+
+      // Actualizar timestamp al más reciente recibido
+      const maxTs = data.reduce((m,r) => r.updated_at > m ? r.updated_at : m, lastPollAt[table]||'')
+      if (maxTs) lastPollAt[table] = maxTs
+
+      // Mezclar con estado local
+      data.forEach(nw => {
+        const idx = D[table].findIndex(r => r.id === nw.id)
+        if (idx === -1) D[table] = [nw, ...D[table]]   // INSERT
+        else D[table][idx] = nw                          // UPDATE
+      })
+      changed = true
+    } catch(e) { /* red cortada, se reintenta en siguiente ciclo */ }
+
+    // ── Detectar eliminaciones (conteo rápido) ──
+    try {
+      const { count } = await sb.from(table).select('*',{count:'exact',head:true})
+      if (typeof count === 'number' && count < D[table].length) {
+        // Hay menos filas en BD que en memoria → resincronizar tabla completa
+        const { data: full } = await sb.from(table).select('*').order('created_at',{ascending:false})
+        if (full) { D[table] = full; changed = true }
       }
     } catch(e) {}
   }
 
-  // Solo rerenderizar si cambiaron datos Y el usuario no está escribiendo
-  if (changed && !userIsTyping()) render()
+  if (changed) render()
 }
 
 function startPolling() {
@@ -661,7 +655,7 @@ function render() {
     `<span class="ntab-ico">${t.icon}</span>${t.label}</button>`
   ).join('')
   // page
-  const pages = { inv:pgInv, ven:pgVen, ped:pgPed, fin:pgFin, inv2:pgInv2, bal:pgBal, his:pgHis }
+  const pages = { ped:pgPed, ven:pgVen, inv:pgInv, fin:pgFin, inv2:pgInv2, bal:pgBal, his:pgHis }
   $('main').innerHTML = (pages[tab]||pgInv)()
 }
 
@@ -863,8 +857,7 @@ function pgVen() {
       <input id="v_f" type="date" value="${td()}" style="max-width:150px">
     </div>
     <input id="v_d" type="text" placeholder="Dirección / referencia" style="width:100%;margin-bottom:8px">
-    <p style="font-size:11px;color:var(--g);margin-bottom:6px">💡 Para ventas directas (sin pedido previo). Descuenta stock e ingreso automáticamente.</p>
-    <button class="btn primary full" onclick="addVenta()">✓ Registrar venta directa</button>`)}
+    <button class="btn primary full" onclick="addVenta()">✓ Registrar venta</button>`)}
   ${sec('ven_list','📋','Historial de ventas', ()=>`
     <div class="filter-bar">
       <label>Filtrar:</label>
@@ -894,13 +887,11 @@ window.addVenta = async() => {
   if(!pid){ if(errEl) errEl.innerHTML='<div class="err-box">⚠️ Selecciona un producto</div>'; return }
   const p=D.productos.find(x=>x.id===pid)
   const qty=parseInt($('v_q')?.value)||1
-  const monto=parseFloat($('v_m')?.value)||0
-  const fecha=$('v_f')?.value||td()
   if(!p) return
   if(p.cantidad<qty){ if(errEl) errEl.innerHTML=`<div class="err-box">⚠️ Stock insuficiente. Solo hay ${p.cantidad}.</div>`; return }
-  await ins('ventas',{id:uid(),producto_id:pid,producto_nombre:p.nombre,cantidad:qty,monto,ciudad:$('v_c')?.value||'Caracas',direccion:$('v_d')?.value||'',fecha})
+  await ins('ventas',{id:uid(),producto_id:pid,producto_nombre:p.nombre,cantidad:qty,monto:parseFloat($('v_m')?.value)||0,ciudad:$('v_c')?.value||'Caracas',direccion:$('v_d')?.value||'',fecha:$('v_f')?.value||td()})
   await upd('productos',pid,{cantidad:p.cantidad-qty})
-  if(monto>0) await ins('ingresos',{id:uid(),descripcion:'Venta: '+p.nombre+' ×'+qty,monto,fecha})
+  if(monto>0) await ins('ingresos',{id:uid(),descripcion:'Venta: '+p.nombre+' x'+qty,monto,fecha})
   toast('✅ Venta registrada'); render()
 }
 window.saveVenta = async id => {
@@ -914,7 +905,6 @@ window.delVenta = async id => {
   if(!isAdmin){ toast('Solo los administradores pueden eliminar'); return }
   if(!confirm('¿Eliminar esta venta? El stock se devolverá al inventario.')) return
   const v=D.ventas.find(x=>x.id===id); if(!v) return
-  // Devolver stock
   const p=D.productos.find(x=>x.id===v.producto_id)
   if(p) await upd('productos',v.producto_id,{cantidad:p.cantidad+v.cantidad})
   await del('ventas',id)
@@ -925,14 +915,21 @@ window.delVenta = async id => {
 //  PEDIDOS
 // ═══════════════════════════════════════════════════════
 function pgPed() {
-  const opts=D.productos.map(p=>`<option value="${p.id}">${h(p.nombre)}</option>`).join('')
-  const pend=D.pedidos.filter(x=>!x.entregado)
-  const rows=pend.map(p=>{
+  const opts=D.productos.map(p=>`<option value="${p.id}">${h(p.nombre)} (${p.cantidad})</option>`).join('')
+  const hoy=td()
+  const total=D.pedidos.length
+  const totalHoy=D.pedidos.filter(p=>(p.created_at||'').slice(0,10)===hoy).length
+  const pendientes=D.pedidos.filter(x=>!x.entregado)
+  const entregados=D.pedidos.filter(x=>x.entregado)
+  const todos=[...pendientes,...entregados]
+  const rows=todos.map(p=>{
+    const isPend=!p.entregado
     if(editing['ped_'+p.id]) return `<div class="ped-row editing">
       <div style="flex:1;width:100%">
         <div class="row">
           <select id="ep_pr_${p.id}">${D.productos.map(pr=>`<option value="${pr.id}"${pr.id===p.producto_id?' selected':''}>${h(pr.nombre)}</option>`).join('')}</select>
           <input id="ep_q_${p.id}" type="number" value="${p.cantidad}" style="max-width:70px">
+          <input id="ep_m_${p.id}" type="number" value="${p.monto||0}" placeholder="Monto $" style="max-width:100px">
         </div>
         <div class="row">
           <input id="ep_cl_${p.id}" type="text" value="${h(p.cliente||'')}" placeholder="Cliente">
@@ -945,22 +942,37 @@ function pgPed() {
         </div>
       </div>
     </div>`
-    return `<div class="ped-row">
+    const borderColor=isPend?'var(--wn)':'var(--gn)'
+    const statusTag=isPend
+      ?'<span class="tag pend" style="margin-left:4px">Pendiente</span>'
+      :'<span class="tag money" style="margin-left:4px">Entregado</span>'
+    const montoTag=p.monto?`<span class="tag money" style="margin-left:6px">${fmt(p.monto)}</span>`:''
+    const fechaTag=(p.created_at||'').slice(0,10)?`<span style="color:var(--g2);font-size:11px;margin-left:4px">${fd((p.created_at||'').slice(0,10))}</span>`:''
+    const accionBtn=isPend
+      ?`<button class="btn sm success" onclick="entregarPed('${p.id}')">Entregar</button>`
+      :`<button class="btn sm" style="border-color:var(--wn);color:var(--wn)" onclick="reabrirPed('${p.id}')">Pendiente</button>`
+    const delBtn=isAdmin?`<button class="icon-btn" onclick="delPed('${p.id}')">&#128465;</button>`:''
+    return `<div class="ped-row" style="border-left:3px solid ${borderColor}">
       <div class="ped-info">
-        <div class="ped-prod">${h(p.producto_nombre)} ×${p.cantidad}</div>
-        <div class="ped-meta">${p.cliente?'👤 '+h(p.cliente)+'  ':''}${p.ciudad?'📍 '+h(p.ciudad):''}${p.direccion?' — '+h(p.direccion):''}</div>
+        <div class="ped-prod">${h(p.producto_nombre)} x${p.cantidad} ${montoTag} ${statusTag}</div>
+        <div class="ped-meta">${p.cliente?'&#128100; '+h(p.cliente)+'  ':''}${p.ciudad?'&#128205; '+h(p.ciudad):''}${p.direccion?' — '+h(p.direccion):''} ${fechaTag}</div>
       </div>
-      <div style="display:flex;gap:5px;align-items:center">
-        <button class="icon-btn" onclick="startEdit('ped','${p.id}')">✏️</button>
-        <button class="btn sm success" onclick="entregarPed('${p.id}')">✓ Entregado</button>
+      <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
+        <button class="icon-btn" onclick="startEdit('ped','${p.id}')">&#9999;</button>
+        ${accionBtn} ${delBtn}
       </div>
     </div>`
   }).join('')
-
-  return `<div class="pg-title">⏳ Pendientes</div>
-  ${sec('ped_new','➕','Nuevo pedido',()=>`
+  return `<div class="pg-title">&#128203; Pedidos</div>
+  <div class="stats-row">
+    <div class="stat"><div class="stat-lbl">Total pedidos</div><div class="stat-val">${total}</div></div>
+    <div class="stat"><div class="stat-lbl">Hoy</div><div class="stat-val">${totalHoy}</div></div>
+    <div class="stat"><div class="stat-lbl">Pendientes</div><div class="stat-val" style="color:var(--wn)">${pendientes.length}</div></div>
+    <div class="stat"><div class="stat-lbl">Entregados</div><div class="stat-val gn">${entregados.length}</div></div>
+  </div>
+  ${sec('ped_new','+','Nuevo pedido',()=>`
     <div class="row">
-      <select id="pd_p"><option value="">— Producto —</option>${opts}</select>
+      <select id="pd_p"><option value="">Seleccionar producto</option>${opts}</select>
       <input id="pd_q" type="number" min="1" value="1" style="max-width:70px" placeholder="Cant">
       <input id="pd_m" type="number" min="0" step="0.01" placeholder="Monto $" style="max-width:110px">
     </div>
@@ -968,44 +980,28 @@ function pgPed() {
       <input id="pd_cl" type="text" placeholder="Cliente">
       <input id="pd_ci" type="text" placeholder="Ciudad">
     </div>
-    <input id="pd_di" type="text" placeholder="Dirección" style="width:100%;margin-bottom:8px">
-    <p style="font-size:11px;color:var(--g);margin-bottom:8px">⚡ Al crear el pedido se descuenta el stock. Al marcarlo Entregado se registra la venta y el ingreso.</p>
+    <input id="pd_di" type="text" placeholder="Dirección" style="width:100%;margin-bottom:6px">
+    <p style="font-size:11px;color:var(--g);margin-bottom:8px">El stock se descuenta al crear. Al marcar Entregado se registra venta e ingreso.</p>
     <button class="btn yellow full" onclick="addPed()">+ Crear pedido</button>`)}
-  ${sec('ped_list','📋','Lista de pendientes',()=>`
-    <div class="list">${rows||'<div class="empty" style="border-color:#6ee7b7;color:var(--gnd)">✅ ¡Sin pendientes! Todo entregado.</div>'}</div>`,
-    String(pend.length))}`
+  ${sec('ped_list','Lista','Todos los pedidos',()=>`
+    <div class="list">${rows||'<div class="empty">Aun no hay pedidos registrados</div>'}</div>`,
+    String(total))}`
 }
-
 window.addPed = async() => {
   const pid=$('pd_p')?.value; if(!pid) return
   const p=D.productos.find(x=>x.id===pid)
-  const qty=parseInt($('pd_q')?.value)||1
-  const monto=parseFloat($('pd_m')?.value)||0
-  if(!p){ toast('⚠️ Producto no encontrado'); return }
-  if(p.cantidad<qty){ toast('⚠️ Stock insuficiente. Solo hay '+p.cantidad+' unidades.'); return }
-  await ins('pedidos',{id:uid(),producto_id:pid,producto_nombre:p.nombre,cantidad:qty,monto,cliente:$('pd_cl')?.value||'',ciudad:$('pd_ci')?.value||'',direccion:$('pd_di')?.value||'',entregado:false})
-  await upd('productos',pid,{cantidad:p.cantidad-qty})
-  toast('📦 Pedido creado — stock descontado'); render()
+  await ins('pedidos',{id:uid(),producto_id:pid,producto_nombre:p?.nombre||'',cantidad:parseInt($('pd_q')?.value)||1,cliente:$('pd_cl')?.value||'',ciudad:$('pd_ci')?.value||'',direccion:$('pd_di')?.value||'',entregado:false})
+  toast('📦 Pedido agregado'); render()
 }
 window.savePed = async id => {
   const p=D.pedidos.find(x=>x.id===id); if(!p) return
   const pid=$('ep_pr_'+id)?.value
   const pr=D.productos.find(x=>x.id===pid)
-  await upd('pedidos',id,{producto_id:pid,producto_nombre:pr?.nombre||p.producto_nombre,cantidad:parseInt($('ep_q_'+id)?.value)||p.cantidad,cliente:$('ep_cl_'+id)?.value||'',ciudad:$('ep_ci_'+id)?.value||'',direccion:$('ep_di_'+id)?.value||''})
+  await upd('pedidos',id,{producto_id:pid,producto_nombre:pr?.nombre||p.producto_nombre,cantidad:parseInt($('ep_q_'+id)?.value)||p.cantidad,monto:parseFloat($('ep_m_'+id)?.value)||0,cliente:$('ep_cl_'+id)?.value||'',ciudad:$('ep_ci_'+id)?.value||'',direccion:$('ep_di_'+id)?.value||''})
   delete editing['ped_'+id]; toast('✅ Pedido actualizado'); render()
 }
 window.entregarPed = async id => {
-  const ped=D.pedidos.find(x=>x.id===id); if(!ped) return
-  const fecha=td()
-  // Marcar pedido como entregado
-  await upd('pedidos',id,{entregado:true})
-  // Crear venta automáticamente
-  await ins('ventas',{id:uid(),producto_id:ped.producto_id,producto_nombre:ped.producto_nombre,cantidad:ped.cantidad,monto:ped.monto||0,ciudad:ped.ciudad||'',direccion:ped.direccion||'',fecha})
-  // Registrar ingreso en Finanzas si tiene monto
-  if((ped.monto||0)>0){
-    await ins('ingresos',{id:uid(),descripcion:'Entrega: '+ped.producto_nombre+' ×'+ped.cantidad+(ped.cliente?' — '+ped.cliente:''),monto:ped.monto,fecha})
-  }
-  toast('✅ Entregado — venta e ingreso registrados'); render()
+  await upd('pedidos',id,{entregado:true}); toast('✅ Marcado como entregado'); render()
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1040,30 +1036,23 @@ function pgFin() {
     </div>`
   }).join('')
 
-  const hoy=td()
-  const totalHoy=D.ingresos.filter(i=>i.fecha===hoy).reduce((s,i)=>s+Number(i.monto),0)
-  // agrupar por fecha para desglose diario
+  const hoyFin=td()
+  const totalHoy=D.ingresos.filter(i=>i.fecha===hoyFin).reduce((s,i)=>s+Number(i.monto),0)
   const porFecha={}
-  D.ingresos.forEach(i=>{ const f=i.fecha||'sin fecha'; porFecha[f]=(porFecha[f]||0)+Number(i.monto) })
-  const fechasOrden=Object.keys(porFecha).sort((a,b)=>b.localeCompare(a))
-  const desglose=fechasOrden.slice(0,7).map(f=>`
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px">
-      <span style="color:var(--g)">${fd(f)}</span>
-      <span class="tag money">+${fmt(porFecha[f])}</span>
-    </div>`).join('')
+  D.ingresos.forEach(i=>{const f=i.fecha||'sin fecha';porFecha[f]=(porFecha[f]||0)+Number(i.monto)})
+  const fechasDia=Object.keys(porFecha).sort((a,b)=>b.localeCompare(a)).slice(0,7)
+  const desgloseHTML=fechasDia.map(f=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px"><span style="color:var(--g)">${fd(f)}</span><span class="tag money">+${fmt(porFecha[f])}</span></div>`).join('')
   return `<div class="pg-title">📊 Finanzas</div>
   <div class="stats-row">
     <div class="stat"><div class="stat-lbl">Total acumulado</div><div class="stat-val gn">${fmt(total)}</div></div>
     <div class="stat"><div class="stat-lbl">Hoy</div><div class="stat-val gn">${fmt(totalHoy)}</div></div>
     <div class="stat"><div class="stat-lbl">Registros</div><div class="stat-val">${D.ingresos.length}</div></div>
   </div>
-  ${fechasOrden.length>0?`<div class="sec" style="margin-bottom:12px">
+  ${fechasDia.length?`<div class="sec" style="margin-bottom:12px">
     <div class="sec-hdr" onclick="toggleSec('fin_dias')">
-      <div class="sec-hdr-l"><span class="sec-ico">📅</span><span class="sec-hdr-title">Ingresos por día (últimos 7 días)</span></div>
-      <span class="sec-chevron open">▼</span>
-    </div>
-    <div class="sec-body" id="sb_fin_dias" style="padding:8px 16px">${desglose}</div>
-  </div>`:''}
+      <div class="sec-hdr-l"><span class="sec-ico">📅</span><span class="sec-hdr-title">Ingresos por día</span></div>
+      <span class="sec-chevron open">▼</span></div>
+    <div class="sec-body" id="sb_fin_dias" style="padding:8px 16px">${desgloseHTML}</div></div>`:''}
   ${sec('fin_new','➕','Registrar ingreso',()=>`
     <div class="row">
       <input id="fi_d" type="text" placeholder="Descripción (ej: Ventas del día)">
@@ -1278,7 +1267,7 @@ async function openApp() {
 
 function boot() {
   renderLoginUsers()
-  // initSb() se llama dentro de openApp(), no aquí
+  initSb()   // solo valida config, no bloquea
   // Restaurar sesión de la última visita (expira en 8 horas)
   try {
     const s = JSON.parse(localStorage.getItem('lc_session')||'null')
