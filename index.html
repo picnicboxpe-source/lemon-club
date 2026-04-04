@@ -450,7 +450,8 @@ let secOpen = {}
 let editing = {}
 let ventaFiltro = 'hoy'
 let vDesde = '', vHasta = ''
-let channels = []
+let pollTimer = null
+let lastPollAt = {}   // { table: ISO string } — timestamps de último registro conocido
 
 const TABS = [
   { id:'inv',  icon:'📦', label:'Inventario' },
@@ -564,22 +565,70 @@ async function del(table, id) {
   return { error }
 }
 
-function setupRealtime() {
-  const tables = ['categorias','productos','ventas','pedidos','ingresos','gastos','ciclos']
-  tables.forEach(table => {
-    const ch = sb.channel('rt_'+table)
-      .on('postgres_changes',{ event:'*', schema:'public', table }, payload => {
-        const { eventType:ev, new:nw, old } = payload
-        if      (ev==='INSERT' && nw && !D[table].find(r=>r.id===nw.id)) D[table]=[nw,...D[table]]
-        else if (ev==='UPDATE' && nw) D[table]=D[table].map(r=>r.id===nw.id?nw:r)
-        else if (ev==='DELETE' && old) D[table]=D[table].filter(r=>r.id!==old.id)
-        render()
+// ── POLLING ENGINE (reemplaza Realtime de pago) ──────────
+// Funciona como un Drive compartido: cada 3 s compara
+// timestamps y descarga solo las filas nuevas/modificadas.
+// Sin websockets, sin plan pago, sin límites.
+
+const POLL_INTERVAL = 3000   // ms entre cada chequeo
+const TABLES = ['categorias','productos','ventas','pedidos','ingresos','gastos','ciclos']
+
+async function pollOnce() {
+  if (!sb || !currentUser) return
+  let changed = false
+
+  for (const table of TABLES) {
+    try {
+      // ── Detectar filas nuevas o actualizadas ──
+      const since = lastPollAt[table]
+      let q = sb.from(table).select('*').order('created_at',{ascending:false})
+      if (since) q = q.gt('updated_at', since)   // solo trae cambios recientes
+
+      const { data, error } = await q
+      if (error || !data || data.length === 0) continue
+
+      // Actualizar timestamp al más reciente recibido
+      const maxTs = data.reduce((m,r) => r.updated_at > m ? r.updated_at : m, lastPollAt[table]||'')
+      if (maxTs) lastPollAt[table] = maxTs
+
+      // Mezclar con estado local
+      data.forEach(nw => {
+        const idx = D[table].findIndex(r => r.id === nw.id)
+        if (idx === -1) D[table] = [nw, ...D[table]]   // INSERT
+        else D[table][idx] = nw                          // UPDATE
       })
-      .subscribe()
-    channels.push(ch)
+      changed = true
+    } catch(e) { /* red cortada, se reintenta en siguiente ciclo */ }
+
+    // ── Detectar eliminaciones (conteo rápido) ──
+    try {
+      const { count } = await sb.from(table).select('*',{count:'exact',head:true})
+      if (typeof count === 'number' && count < D[table].length) {
+        // Hay menos filas en BD que en memoria → resincronizar tabla completa
+        const { data: full } = await sb.from(table).select('*').order('created_at',{ascending:false})
+        if (full) { D[table] = full; changed = true }
+      }
+    } catch(e) {}
+  }
+
+  if (changed) render()
+}
+
+function startPolling() {
+  if (pollTimer) return          // ya está corriendo
+  // Inicializar timestamps con lo que ya tenemos en memoria
+  TABLES.forEach(t => {
+    const ts = D[t].reduce((m,r) => (r.updated_at||r.created_at) > m ? (r.updated_at||r.created_at) : m, '')
+    if (ts) lastPollAt[t] = ts
   })
+  pollTimer = setInterval(pollOnce, POLL_INTERVAL)
   $('ldot').classList.add('on')
-  $('llbl').textContent = 'En vivo'
+  $('llbl').textContent = 'Sincronizando'
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+  $('ldot').classList.remove('on')
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1176,9 +1225,9 @@ async function boot() {
       const av=$('u-av'); av.textContent=name[0].toUpperCase(); av.style.background=avatarColor(name)
       if(isAdmin) $('btn-ciclo').style.display='flex'
 
-      // Load data & setup realtime
+      // Load data & start polling
       await loadAll()
-      setupRealtime()
+      startPolling()
 
       // Show app
       $('login-screen').style.display='none'
