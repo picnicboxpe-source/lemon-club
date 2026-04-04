@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Lemon Club App</title>
+<title>Lemon Club Pro</title>
 <style>
 body { font-family: Arial; margin:0; background:#f4f4f4; }
 header { background:black; color:white; padding:15px; text-align:center; }
@@ -11,7 +11,7 @@ nav button { background:none; border:none; font-weight:bold; }
 .container { padding:15px; }
 .hidden { display:none; }
 .card { background:white; padding:15px; margin-bottom:10px; border-radius:10px; }
-input, button { padding:10px; margin:5px 0; width:100%; }
+input, select, button { padding:10px; margin:5px 0; width:100%; }
 </style>
 </head>
 <body>
@@ -39,6 +39,7 @@ input, button { padding:10px; margin:5px 0; width:100%; }
 
   <div class="container">
 
+    <!-- INVENTARIO -->
     <div id="inventario" class="section">
       <div class="card">
         <h3>Inventario</h3>
@@ -49,34 +50,51 @@ input, button { padding:10px; margin:5px 0; width:100%; }
       <div id="listaInv"></div>
     </div>
 
+    <!-- VENTAS -->
     <div id="ventas" class="section hidden">
       <div class="card">
-        <h3>Registrar venta</h3>
+        <h3>Nueva venta</h3>
+        <input id="cliente" placeholder="Cliente">
+        <input id="ciudad" placeholder="Ciudad">
         <input id="ventaProd" placeholder="Producto">
         <input id="ventaCant" type="number" placeholder="Cantidad">
-        <button onclick="venta()">Vender</button>
+        <input id="precio" type="number" placeholder="Precio (S/)">
+        <select id="tipo">
+          <option value="delivery">Delivery</option>
+          <option value="pickup">Pickup</option>
+        </select>
+        <input id="fecha" type="date">
+        <button onclick="venta()">Registrar venta</button>
       </div>
       <div id="listaVentas"></div>
     </div>
 
+    <!-- FINANZAS -->
     <div id="finanzas" class="section hidden">
       <div class="card">
-        <h3>Total ventas</h3>
-        <h2 id="total">S/ 0</h2>
+        <h3>Registrar gasto</h3>
+        <input id="gastoDesc" placeholder="Descripción">
+        <input id="gastoMonto" type="number" placeholder="Monto">
+        <button onclick="addGasto()">Agregar gasto</button>
+      </div>
+      <div class="card">
+        <h3>Resumen</h3>
+        <p id="ingresos"></p>
+        <p id="gastos"></p>
+        <p id="neto"></p>
       </div>
     </div>
 
+    <!-- BALANCE -->
     <div id="balance" class="section hidden">
       <div class="card">
-        <h3>Balance</h3>
+        <h3>Balance total</h3>
         <p id="balanceText"></p>
       </div>
     </div>
 
+    <!-- HISTORIAL -->
     <div id="historial" class="section hidden">
-      <div class="card">
-        <h3>Historial</h3>
-      </div>
       <div id="hist"></div>
     </div>
 
@@ -88,19 +106,14 @@ const CLAVE = "1234";
 
 let inventario = JSON.parse(localStorage.getItem("inv")||"[]");
 let ventas = JSON.parse(localStorage.getItem("ventas")||"[]");
+let gastos = JSON.parse(localStorage.getItem("gastos")||"[]");
 
 function login(){
-  let u = user.value;
-  let p = pass.value;
-  if(p===CLAVE){
-    loginDiv = document.getElementById("login");
-    appDiv = document.getElementById("app");
-    loginDiv.classList.add("hidden");
-    appDiv.classList.remove("hidden");
+  if(pass.value===CLAVE){
+    login.classList.add("hidden");
+    app.classList.remove("hidden");
     render();
-  } else {
-    error.innerText="Clave incorrecta";
-  }
+  } else error.innerText="Clave incorrecta";
 }
 
 function show(sec){
@@ -116,20 +129,35 @@ function addInv(){
 }
 
 function venta(){
-  let p = ventaProd.value;
+  let item = inventario.find(i=>i.nombre===ventaProd.value);
   let c = parseInt(ventaCant.value);
 
-  let item = inventario.find(i=>i.nombre===p);
-  if(!item || item.stock < c){
-    alert("Sin stock");
-    return;
-  }
+  if(!item || item.stock < c){ alert("Sin stock"); return; }
 
   item.stock -= c;
-  ventas.push({nombre:p, cantidad:c});
+
+  ventas.push({
+    cliente: cliente.value,
+    ciudad: ciudad.value,
+    producto: ventaProd.value,
+    cantidad: c,
+    precio: parseFloat(precio.value),
+    tipo: tipo.value,
+    fecha: fecha.value
+  });
+
   localStorage.setItem("inv", JSON.stringify(inventario));
   localStorage.setItem("ventas", JSON.stringify(ventas));
 
+  render();
+}
+
+function addGasto(){
+  gastos.push({
+    desc: gastoDesc.value,
+    monto: parseFloat(gastoMonto.value)
+  });
+  localStorage.setItem("gastos", JSON.stringify(gastos));
   render();
 }
 
@@ -141,16 +169,27 @@ function render(){
 
   listaVentas.innerHTML="";
   ventas.forEach(v=>{
-    listaVentas.innerHTML += `<div class='card'>${v.nombre} - ${v.cantidad}</div>`;
+    listaVentas.innerHTML += `<div class='card'>
+      ${v.cliente} - ${v.producto} (${v.cantidad})<br>
+      ${v.tipo} - ${v.fecha}
+    </div>`;
   });
 
-  let total = ventas.reduce((a,b)=>a + b.cantidad*10,0);
-  document.getElementById("total").innerText="S/ "+total;
-  document.getElementById("balanceText").innerText="Ingresos: S/ "+total;
+  let totalIng = ventas.reduce((a,b)=>a + (b.precio*b.cantidad),0);
+  let totalGas = gastos.reduce((a,b)=>a + b.monto,0);
+  let neto = totalIng - totalGas;
+
+  ingresos.innerText="Ingresos: S/ "+totalIng;
+  gastosText = document.getElementById("gastos");
+  gastosText.innerText="Gastos: S/ "+totalGas;
+  netoText = document.getElementById("neto");
+  netoText.innerText="Neto: S/ "+neto;
+
+  balanceText.innerText="Balance total: S/ "+neto;
 
   hist.innerHTML="";
   ventas.forEach(v=>{
-    hist.innerHTML += `<div class='card'>Venta: ${v.nombre}</div>`;
+    hist.innerHTML += `<div class='card'>${v.cliente} - ${v.producto}</div>`;
   });
 }
 </script>
