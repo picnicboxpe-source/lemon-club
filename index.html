@@ -480,16 +480,39 @@ tr:hover td { background: rgba(200,212,0,0.05); }
     <div id="tab-ventas" class="panel active">
       <div class="lock-notice" id="lock-ventas">Modo vendedor — solo puedes registrar ventas.</div>
       <div class="section-title">Registrar venta</div>
+
+      <!-- Fila 1: cliente, ciudad, fecha, dirección -->
       <div class="form-row">
-        <div class="form-group"><label>Producto</label><select id="v-producto"></select></div>
-        <div class="form-group"><label>Cantidad</label><input type="number" id="v-cantidad" min="1" value="1"></div>
-        <div class="form-group"><label>Monto ($)</label><input type="number" id="v-monto" placeholder="0.00" step="0.01"></div>
+        <div class="form-group"><label>Nombre de cliente</label><input type="text" id="v-cliente" placeholder="Nombre del cliente"></div>
         <div class="form-group"><label>Ciudad</label>
           <select id="v-ciudad"><option>Caracas</option><option>Interior</option></select>
         </div>
         <div class="form-group"><label>Fecha</label><input type="date" id="v-fecha"></div>
         <div class="form-group"><label>Dirección</label><input type="text" id="v-direccion" placeholder="Dirección de entrega"></div>
       </div>
+
+      <!-- Selector de cantidad de productos -->
+      <div class="form-row" style="margin-bottom:10px">
+        <div class="form-group" style="max-width:200px">
+          <label>Cantidad de productos</label>
+          <select id="v-num-productos" onchange="generarFilasProductos()">
+            <option value="1">1 producto</option>
+            <option value="2">2 productos</option>
+            <option value="3">3 productos</option>
+            <option value="4">4 productos</option>
+            <option value="5">5 productos</option>
+            <option value="6">6 productos</option>
+            <option value="7">7 productos</option>
+            <option value="8">8 productos</option>
+            <option value="9">9 productos</option>
+            <option value="10">10 productos</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Filas dinámicas de productos -->
+      <div id="v-productos-container" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+
       <button class="btn btn-primary" onclick="registrarVenta()">+ Registrar venta</button>
       <hr class="divider">
       <div class="section-title">Historial de ventas</div>
@@ -506,8 +529,8 @@ tr:hover td { background: rgba(200,212,0,0.05); }
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Producto</th><th>Cant.</th><th>Monto</th><th>Ciudad</th><th>Fecha</th><th>Dirección</th><th></th></tr></thead>
-          <tbody id="v-tabla"><tr><td colspan="7" class="empty">Sin ventas aún</td></tr></tbody>
+          <thead><tr><th>Cliente / Productos</th><th>Ciudad</th><th>Monto total</th><th>Fecha</th><th>Dirección</th><th></th></tr></thead>
+          <tbody id="v-tabla"><tr><td colspan="6" class="empty">Sin ventas aún</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -521,7 +544,7 @@ tr:hover td { background: rgba(200,212,0,0.05); }
         <div class="form-group"><label>Categoría</label>
           <select id="i-categoria" onchange="toggleOtros()">
             <option>Collares</option><option>Aretes</option><option>Pulseras</option>
-            <option>Anillos</option><option>Bolsos</option><option>Cinturones</option><option>Otros</option>
+            <option>Anillos</option><option>Bolsos</option><option>Cinturones</option><option>Ganchos</option><option>Otros</option>
           </select>
         </div>
         <div class="form-group" id="otros-group" style="display:none">
@@ -669,13 +692,13 @@ import { getDatabase, ref, set, push, remove, onValue, serverTimestamp, onDiscon
    6. Copia los valores y reemplaza los de abajo
 ════════════════════════════════════════════════ */
 const firebaseConfig = {
-  apiKey:            "AIzaSyCcf8QZM6T6fb5tHvIQx86Ine045Dr6tLM",
-  authDomain:        "lemonclubapp.firebaseapp.com",
-  databaseURL:       "https://lemonclubapp-default-rtdb.firebaseio.com",
-  projectId:         "lemonclubapp",
-  storageBucket:     "lemonclubapp.firebasestorage.app",
-  messagingSenderId: "257292451659",
-  appId:             "1:257292451659:web:16f0cf0bc9db44dca8f2ce"
+  apiKey:            "TU_API_KEY",
+  authDomain:        "TU_PROYECTO.firebaseapp.com",
+  databaseURL:       "https://TU_PROYECTO-default-rtdb.firebaseio.com",
+  projectId:         "TU_PROYECTO",
+  storageBucket:     "TU_PROYECTO.appspot.com",
+  messagingSenderId: "TU_SENDER_ID",
+  appId:             "TU_APP_ID"
 };
 
 /* ── MODO OFFLINE (fallback si Firebase no está configurado) ── */
@@ -843,6 +866,7 @@ function applyRoleUI(role) {
 function init() {
   document.getElementById('v-fecha').value = today();
   document.getElementById('g-fecha').value = today();
+  generarFilasProductos();
   actualizarSelectProductos();
   renderVentas(); renderInventario(); renderFinanzas();
   renderGastos(); actualizarBalance(); renderHistorial();
@@ -863,37 +887,81 @@ window.showTab = function(t) {
 
 /* ════ VENTAS ════ */
 function actualizarSelectProductos() {
-  const sel = document.getElementById('v-producto');
-  const val = sel.value;
-  sel.innerHTML = '<option value="">Seleccionar producto...</option>';
-  productos.forEach(p => {
-    const o = document.createElement('option');
-    o.value = p.nombre; o.textContent = p.nombre + ' (' + p.cantidad + ')';
-    sel.appendChild(o);
+  document.querySelectorAll('.v-prod-select').forEach(sel => {
+    const val = sel.value;
+    sel.innerHTML = '<option value="">Seleccionar producto...</option>';
+    productos.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.nombre; o.textContent = p.nombre + ' (' + p.cantidad + ')';
+      sel.appendChild(o);
+    });
+    if (val) sel.value = val;
   });
-  if (val) sel.value = val;
 }
 
+window.generarFilasProductos = function() {
+  const n = parseInt(document.getElementById('v-num-productos').value) || 1;
+  const cont = document.getElementById('v-productos-container');
+  cont.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const div = document.createElement('div');
+    div.className = 'form-row';
+    div.style.cssText = 'background:var(--beige);border-radius:16px;padding:10px 12px;margin-bottom:0;border:1.5px solid var(--border-light)';
+    div.innerHTML = `
+      <div class="form-group">
+        <label>Producto ${n > 1 ? (i+1) : ''}</label>
+        <select class="v-prod-select" id="v-prod-${i}">
+          <option value="">Seleccionar producto...</option>
+          ${productos.map(p => `<option value="${p.nombre}">${p.nombre} (${p.cantidad})</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group" style="max-width:100px">
+        <label>Cant.</label>
+        <input type="number" class="v-cant-input" id="v-cant-${i}" min="1" value="1">
+      </div>
+      <div class="form-group" style="max-width:130px">
+        <label>Monto ($)</label>
+        <input type="number" class="v-monto-input" id="v-monto-${i}" placeholder="0.00" step="0.01">
+      </div>`;
+    cont.appendChild(div);
+  }
+};
+
 window.registrarVenta = function() {
-  const prod   = document.getElementById('v-producto').value;
-  const cant   = parseInt(document.getElementById('v-cantidad').value) || 1;
-  const monto  = parseFloat(document.getElementById('v-monto').value)  || 0;
-  const ciudad = document.getElementById('v-ciudad').value;
-  const fecha  = document.getElementById('v-fecha').value;
-  const dir    = document.getElementById('v-direccion').value;
-  if (!prod || !monto) { alert('Completa producto y monto.'); return; }
-  const p = productos.find(x => x.nombre === prod);
-  if (p && p.cantidad < cant) { alert('Stock insuficiente.'); return; }
-  if (p) { p.cantidad -= cant; saveRemote('productos', productos); }
+  const cliente = document.getElementById('v-cliente').value.trim();
+  const ciudad  = document.getElementById('v-ciudad').value;
+  const fecha   = document.getElementById('v-fecha').value;
+  const dir     = document.getElementById('v-direccion').value;
+  const n = parseInt(document.getElementById('v-num-productos').value) || 1;
+  const items = [];
+  for (let i = 0; i < n; i++) {
+    const prod  = document.getElementById('v-prod-' + i)?.value;
+    const cant  = parseInt(document.getElementById('v-cant-' + i)?.value) || 1;
+    const monto = parseFloat(document.getElementById('v-monto-' + i)?.value) || 0;
+    if (!prod || !monto) { alert('Completa producto y monto en todas las filas.'); return; }
+    const p = productos.find(x => x.nombre === prod);
+    if (p && p.cantidad < cant) { alert('Stock insuficiente para: ' + prod); return; }
+    items.push({ producto: prod, cantidad: cant, monto });
+  }
+  const montoTotal = items.reduce((a, it) => a + it.monto, 0);
+  items.forEach(it => {
+    const p = productos.find(x => x.nombre === it.producto);
+    if (p) p.cantidad -= it.cantidad;
+  });
+  saveRemote('productos', productos);
   ventas.push({
-    id: Date.now(), producto: prod, cantidad: cant, monto,
+    id: Date.now(),
+    cliente: cliente || 'Sin nombre',
+    items,
+    monto: montoTotal,
     ciudad, fecha, direccion: dir,
     hora: new Date().toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'})
   });
   saveRemote('ventas', ventas);
-  document.getElementById('v-monto').value    = '';
+  document.getElementById('v-cliente').value   = '';
   document.getElementById('v-direccion').value = '';
-  document.getElementById('v-cantidad').value  = 1;
+  document.getElementById('v-num-productos').value = '1';
+  generarFilasProductos();
   actualizarSelectProductos(); renderVentas(); renderFinanzas(); actualizarBalance();
 };
 
@@ -918,29 +986,49 @@ function getVentasFiltradas() {
 
 function renderVentas() {
   const list  = getVentasFiltradas();
-  const total = list.reduce((a,v) => a+v.monto, 0);
+  const total = list.reduce((a,v) => a + v.monto, 0);
   document.getElementById('v-count').textContent = list.length;
   document.getElementById('v-total').textContent = fmt(total);
   const tb = document.getElementById('v-tabla');
   const canDel = currentRole === 'admin';
-  if (!list.length) { tb.innerHTML = '<tr><td colspan="7" class="empty">Sin ventas en este período</td></tr>'; return; }
-  tb.innerHTML = list.slice().reverse().map(v => `<tr>
-    <td><span class="pill pill-lemon">${v.producto}</span></td>
-    <td>${v.cantidad}</td>
-    <td style="font-weight:500">${fmt(v.monto)}</td>
-    <td><span class="pill pill-orange">${v.ciudad}</span></td>
-    <td>${fmtDate(v.fecha)}</td>
-    <td style="font-size:12px;color:var(--text3)">${v.direccion || '—'}</td>
-    <td>${canDel ? `<button class="btn btn-sm" onclick="eliminarVenta(${v.id})" style="color:var(--danger);border-color:#F5C2BF">✕</button>` : ''}</td>
-  </tr>`).join('');
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="6" class="empty">Sin ventas en este período</td></tr>'; return; }
+  tb.innerHTML = list.slice().reverse().map(v => {
+    const items = v.items || [{ producto: v.producto, cantidad: v.cantidad, monto: v.monto }];
+    const detId = 'det_' + v.id;
+    const detalle = items.map(it =>
+      `<div style="font-size:12px;padding:3px 0;display:flex;gap:8px;align-items:center">
+        <span class="pill pill-lemon">${it.producto}</span>
+        <span style="color:var(--text3)">x${it.cantidad}</span>
+        <span style="font-weight:500">${fmt(it.monto)}</span>
+      </div>`).join('');
+    return `<tr>
+      <td>
+        <div style="font-weight:500;margin-bottom:4px">${v.cliente || 'Sin nombre'}</div>
+        <button onclick="var el=document.getElementById('${detId}');el.style.display=el.style.display==='none'?'block':'none'"
+          style="font-size:11px;background:none;border:none;cursor:pointer;color:var(--lemon-dark);padding:0;font-family:inherit">
+          &#9658; ${items.length} producto${items.length>1?'s':''}
+        </button>
+        <div id="${detId}" style="display:none;margin-top:6px;padding:8px;background:var(--beige);border-radius:12px">${detalle}</div>
+      </td>
+      <td><span class="pill pill-orange">${v.ciudad}</span></td>
+      <td style="font-weight:500;color:var(--lime-dark)">${fmt(v.monto)}</td>
+      <td>${fmtDate(v.fecha)}</td>
+      <td style="font-size:12px;color:var(--text3)">${v.direccion || '—'}</td>
+      <td>${canDel ? `<button class="btn btn-sm" onclick="eliminarVenta(${v.id})" style="color:var(--danger);border-color:#F5C2BF">&#10005;</button>` : ''}</td>
+    </tr>`;
+  }).join('');
 }
 
 window.eliminarVenta = function(id) {
   const idx = ventas.findIndex(v => v.id === id);
   if (idx > -1) {
     const v = ventas[idx];
-    const p = productos.find(x => x.nombre === v.producto);
-    if (p) { p.cantidad += v.cantidad; saveRemote('productos', productos); }
+    const items = v.items || [{ producto: v.producto, cantidad: v.cantidad }];
+    items.forEach(it => {
+      const p = productos.find(x => x.nombre === it.producto);
+      if (p) p.cantidad += it.cantidad;
+    });
+    saveRemote('productos', productos);
     ventas.splice(idx, 1); saveRemote('ventas', ventas);
   }
   actualizarSelectProductos(); renderVentas(); renderFinanzas(); actualizarBalance();
@@ -1017,9 +1105,11 @@ function renderFinanzas() {
   document.getElementById('f-interior').textContent= fmt(int);
   const tb = document.getElementById('f-tabla');
   if (!vH.length) { tb.innerHTML = '<tr><td colspan="5" class="empty">Sin ventas hoy</td></tr>'; return; }
-  tb.innerHTML = vH.slice().reverse().map(v =>
-    `<tr><td>${v.producto}</td><td>${v.cantidad}</td><td style="font-weight:500">${fmt(v.monto)}</td><td>${v.ciudad}</td><td>${v.hora||'—'}</td></tr>`
-  ).join('');
+  tb.innerHTML = vH.slice().reverse().map(v => {
+    const items = v.items || [{ producto: v.producto, cantidad: v.cantidad, monto: v.monto }];
+    const prods = items.map(it => it.producto).join(', ');
+    return `<tr><td>${v.cliente||'Sin nombre'}<div style="font-size:11px;color:var(--text3)">${prods}</div></td><td>${items.reduce((a,it)=>a+it.cantidad,0)}</td><td style="font-weight:500">${fmt(v.monto)}</td><td>${v.ciudad}</td><td>${v.hora||'—'}</td></tr>`;
+  }).join('');
 }
 
 /* ════ GASTOS ════ */
