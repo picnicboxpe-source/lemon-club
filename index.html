@@ -692,13 +692,13 @@ import { getDatabase, ref, set, push, remove, onValue, serverTimestamp, onDiscon
    6. Copia los valores y reemplaza los de abajo
 ════════════════════════════════════════════════ */
 const firebaseConfig = {
-  apiKey:            "TU_API_KEY",
-  authDomain:        "TU_PROYECTO.firebaseapp.com",
-  databaseURL:       "https://TU_PROYECTO-default-rtdb.firebaseio.com",
-  projectId:         "TU_PROYECTO",
-  storageBucket:     "TU_PROYECTO.appspot.com",
-  messagingSenderId: "TU_SENDER_ID",
-  appId:             "TU_APP_ID"
+  apiKey:            "AIzaSyCcf8QZM6T6fb5tHvIQx86Ine045Dr6tLM",
+  authDomain:        "lemonclubapp.firebaseapp.com",
+  databaseURL:       "https://lemonclubapp-default-rtdb.firebaseio.com",
+  projectId:         "lemonclubapp",
+  storageBucket:     "lemonclubapp.firebasestorage.app",
+  messagingSenderId: "257292451659",
+  appId:             "1:257292451659:web:16f0cf0bc9db44dca8f2ce"
 };
 
 /* ── MODO OFFLINE (fallback si Firebase no está configurado) ── */
@@ -734,7 +734,7 @@ let filtroInvCat = 'Todos';
 
 /* ════ UTILS ════ */
 const fmt      = n => '$' + Number(n).toFixed(2);
-const today    = () => new Date().toISOString().split('T')[0];
+const today    = () => { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 const fmtDate  = d => { if(!d) return ''; const p = d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; };
 const syncShow = () => { document.getElementById('sync-bar').classList.add('show'); };
 const syncHide = () => setTimeout(() => document.getElementById('sync-bar').classList.remove('show'), 800);
@@ -973,8 +973,10 @@ window.filtrarVentas = function(f, el) {
 
 function getVentasFiltradas() {
   const h = today();
-  const ay = new Date(); ay.setDate(ay.getDate()-1); const ayS = ay.toISOString().split('T')[0];
-  const h7 = new Date(); h7.setDate(h7.getDate()-7); const h7S = h7.toISOString().split('T')[0];
+  const ay = new Date(); ay.setDate(ay.getDate()-1);
+  const ayS = ay.getFullYear()+'-'+String(ay.getMonth()+1).padStart(2,'0')+'-'+String(ay.getDate()).padStart(2,'0');
+  const h7 = new Date(); h7.setDate(h7.getDate()-7);
+  const h7S = h7.getFullYear()+'-'+String(h7.getMonth()+1).padStart(2,'0')+'-'+String(h7.getDate()).padStart(2,'0');
   return ventas.filter(v => {
     if (filtroV === 'hoy')   return v.fecha === h;
     if (filtroV === 'ayer')  return v.fecha === ayS;
@@ -1140,7 +1142,8 @@ function renderGastos() {
   const gM = gastos.filter(g => g.fecha.startsWith(ms)).reduce((a,g) => a+g.monto, 0);
   document.getElementById('g-hoy').textContent = fmt(gH);
   document.getElementById('g-mes').textContent = fmt(gM);
-  const h7 = new Date(); h7.setDate(h7.getDate()-7); const h7S = h7.toISOString().split('T')[0];
+  const h7 = new Date(); h7.setDate(h7.getDate()-7);
+  const h7S = h7.getFullYear()+'-'+String(h7.getMonth()+1).padStart(2,'0')+'-'+String(h7.getDate()).padStart(2,'0');
   const list = gastos.filter(g => {
     if (filtroG==='hoy')   return g.fecha===h;
     if (filtroG==='7dias') return g.fecha>=h7S;
