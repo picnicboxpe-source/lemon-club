@@ -469,6 +469,7 @@ tr:hover td { background: rgba(200,212,0,0.05); }
 
     <div class="tabs" id="tabs-bar">
       <div class="tab active" onclick="showTab('ventas')">Ventas</div>
+      <div class="tab" onclick="showTab('pedidos')">Pedidos</div>
       <div class="tab" onclick="showTab('inventario')">Inventario</div>
       <div class="tab" onclick="showTab('finanzas')">Finanzas</div>
       <div class="tab" onclick="showTab('gastos')">Gastos</div>
@@ -533,6 +534,12 @@ tr:hover td { background: rgba(200,212,0,0.05); }
           <tbody id="v-tabla"><tr><td colspan="6" class="empty">Sin ventas aún</td></tr></tbody>
         </table>
       </div>
+    </div>
+
+    <!-- PEDIDOS -->
+    <div id="tab-pedidos" class="panel">
+      <div class="section-title">Pedidos</div>
+      <div class="empty" style="padding:60px 20px;color:var(--text3)">Esta sección está lista para configurar.</div>
     </div>
 
     <!-- INVENTARIO -->
@@ -856,7 +863,7 @@ function applyRoleUI(role) {
   document.getElementById('btn-add-prod').disabled       = !isAdmin;
   document.getElementById('btn-add-gasto').disabled      = !isAdmin;
   const adminTabs = ['finanzas','gastos','balance','historial'];
-  const names     = ['ventas','inventario','finanzas','gastos','balance','historial'];
+  const names     = ['ventas','pedidos','inventario','finanzas','gastos','balance','historial'];
   document.querySelectorAll('.tab').forEach((t, i) => {
     t.style.display = (!isAdmin && adminTabs.includes(names[i])) ? 'none' : '';
   });
@@ -877,7 +884,7 @@ window.showTab = function(t) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(tb => tb.classList.remove('active'));
   document.getElementById('tab-' + t).classList.add('active');
-  const names = ['ventas','inventario','finanzas','gastos','balance','historial'];
+  const names = ['ventas','pedidos','inventario','finanzas','gastos','balance','historial'];
   const idx   = names.indexOf(t);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   if (t === 'finanzas') renderFinanzas();
@@ -886,16 +893,35 @@ window.showTab = function(t) {
 };
 
 /* ════ VENTAS ════ */
+function getCategorias() {
+  return [...new Set(productos.map(p => p.categoria))].sort();
+}
+
+function buildCatOptions() {
+  return '<option value="">Categoría...</option>' +
+    getCategorias().map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+function buildProdOptions(cat) {
+  if (!cat) return '<option value="">← Elige categoría</option>';
+  const lista = productos.filter(p => p.categoria === cat);
+  if (!lista.length) return '<option value="">Sin productos</option>';
+  return '<option value="">Seleccionar...</option>' +
+    lista.map(p => `<option value="${p.nombre}">${p.nombre} (${p.cantidad})</option>`).join('');
+}
+
+window.onCatChange = function(idx) {
+  const cat = document.getElementById('v-cat-' + idx).value;
+  const sel = document.getElementById('v-prod-' + idx);
+  sel.innerHTML = buildProdOptions(cat);
+};
+
 function actualizarSelectProductos() {
-  document.querySelectorAll('.v-prod-select').forEach(sel => {
-    const val = sel.value;
-    sel.innerHTML = '<option value="">Seleccionar producto...</option>';
-    productos.forEach(p => {
-      const o = document.createElement('option');
-      o.value = p.nombre; o.textContent = p.nombre + ' (' + p.cantidad + ')';
-      sel.appendChild(o);
-    });
-    if (val) sel.value = val;
+  document.querySelectorAll('.v-cat-select').forEach(sel => {
+    const idx = sel.id.replace('v-cat-', '');
+    const catVal = sel.value;
+    sel.innerHTML = buildCatOptions();
+    if (catVal) { sel.value = catVal; onCatChange(idx); }
   });
 }
 
@@ -909,17 +935,22 @@ window.generarFilasProductos = function() {
     div.style.cssText = 'background:var(--beige);border-radius:16px;padding:10px 12px;margin-bottom:0;border:1.5px solid var(--border-light)';
     div.innerHTML = `
       <div class="form-group">
-        <label>Producto ${n > 1 ? (i+1) : ''}</label>
-        <select class="v-prod-select" id="v-prod-${i}">
-          <option value="">Seleccionar producto...</option>
-          ${productos.map(p => `<option value="${p.nombre}">${p.nombre} (${p.cantidad})</option>`).join('')}
+        <label>Categoría ${n > 1 ? (i+1) : ''}</label>
+        <select class="v-cat-select" id="v-cat-${i}" onchange="onCatChange(${i})">
+          ${buildCatOptions()}
         </select>
       </div>
-      <div class="form-group" style="max-width:100px">
+      <div class="form-group">
+        <label>Producto ${n > 1 ? (i+1) : ''}</label>
+        <select class="v-prod-select" id="v-prod-${i}">
+          <option value="">← Elige categoría</option>
+        </select>
+      </div>
+      <div class="form-group" style="max-width:90px">
         <label>Cant.</label>
         <input type="number" class="v-cant-input" id="v-cant-${i}" min="1" value="1">
       </div>
-      <div class="form-group" style="max-width:130px">
+      <div class="form-group" style="max-width:120px">
         <label>Monto ($)</label>
         <input type="number" class="v-monto-input" id="v-monto-${i}" placeholder="0.00" step="0.01">
       </div>`;
