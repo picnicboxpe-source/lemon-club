@@ -412,6 +412,32 @@ tr:hover td { background: rgba(200,212,0,0.05); }
   table { font-size: 12px; }
   td, th { padding: 7px 8px; }
 }
+
+/* ── PEDIDOS ── */
+.pedido-card {
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 10px;
+  background: var(--white);
+  transition: border-color .2s;
+}
+.pedido-card.verde  { border-color: #6DBE47; background: #F5FBF0; }
+.pedido-card.amarillo { border-color: #FF8C00; background: #FFFBF2; }
+.pedido-card.rojo   { border-color: #C0392B; background: #FDF5F5; }
+.pedido-header { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px; }
+.pedido-cliente { font-weight:500;font-size:14px;color:var(--text); }
+.pedido-timer { font-size:12px;font-weight:500;padding:3px 10px;border-radius:12px; }
+.timer-verde   { background:#D8F0C0;color:#3D7A25; }
+.timer-amarillo{ background:#FFE8C8;color:#8A4A00; }
+.timer-rojo    { background:#FDECEA;color:#C0392B; }
+.pedido-items  { font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7; }
+.pedido-btns   { display:flex;gap:8px;flex-wrap:wrap; }
+.btn-vender    { background:linear-gradient(135deg,#6DBE47,#3D7A25);color:#fff;border-color:#3D7A25;font-weight:500; }
+.btn-vender:hover { opacity:.88; }
+.btn-cancelar  { background:var(--brown-light);color:var(--brown);border-color:#D4B49A; }
+.btn-editar    { background:#EDF0A0;color:var(--lemon-deep);border-color:#C0CE40; }
+
 </style>
 </head>
 <body>
@@ -538,8 +564,31 @@ tr:hover td { background: rgba(200,212,0,0.05); }
 
     <!-- PEDIDOS -->
     <div id="tab-pedidos" class="panel">
-      <div class="section-title">Pedidos</div>
-      <div class="empty" style="padding:60px 20px;color:var(--text3)">Esta sección está lista para configurar.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+        <div class="section-title" style="margin-bottom:0">Pedidos activos</div>
+        <div style="font-size:11px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#3D7A25;display:inline-block"></span>+10 min</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#FF8C00;display:inline-block"></span>-10 min</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#C0392B;display:inline-block"></span>-5 min</span>
+        </div>
+      </div>
+      <div class="metric-grid" style="margin-bottom:14px">
+        <div class="metric"><div class="metric-label">Pendientes</div><div class="metric-value mv-orange" id="p-count">0</div></div>
+        <div class="metric"><div class="metric-label">Total reservado</div><div class="metric-value mv-green" id="p-total">$0.00</div></div>
+      </div>
+      <div id="p-lista"><div class="empty">Sin pedidos activos</div></div>
+      <div class="modal-backdrop" id="modal-edit-pedido">
+        <div class="modal" style="max-width:500px">
+          <h3>Editar pedido</h3>
+          <p id="edit-cliente-label" style="margin-bottom:10px"></p>
+          <div id="edit-items-container" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+          <button class="btn btn-primary btn-sm" onclick="addEditItem()" style="margin-bottom:10px">+ Agregar producto</button>
+          <div class="modal-btns">
+            <button class="btn" onclick="cerrarEditModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="guardarEditPedido()">Guardar cambios</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- INVENTARIO -->
@@ -772,7 +821,7 @@ function initFirebase() {
     onDisconnect(presRef).remove();
 
     /* Escuchar cambios en tiempo real */
-    const paths = ['ventas','productos','gastos','historial','prodId'];
+    const paths = ['ventas','productos','gastos','historial','prodId','pedidos'];
     paths.forEach(path => {
       onValue(ref(db, 'lemonclub/' + path), snap => {
         const val = snap.val();
@@ -782,6 +831,7 @@ function initFirebase() {
         if (path === 'gastos')    { gastos    = Array.isArray(val) ? val : Object.values(val||{}); saveLocal('gastos', gastos); renderGastos(); actualizarBalance(); }
         if (path === 'historial') { historial = Array.isArray(val) ? val : Object.values(val||{}); saveLocal('historial', historial); renderHistorial(); }
         if (path === 'prodId')    { prodIdCounter = val; saveLocal('prodId', val); }
+        if (path === 'pedidos')   { pedidos = Array.isArray(val) ? val : Object.values(val||{}); saveLocal('pedidos', pedidos); renderPedidos(); }
       });
     });
 
@@ -877,6 +927,7 @@ function init() {
   actualizarSelectProductos();
   renderVentas(); renderInventario(); renderFinanzas();
   renderGastos(); actualizarBalance(); renderHistorial();
+  renderPedidos(); startPedidosTimer();
 }
 
 /* ════ TAB NAV ════ */
@@ -888,6 +939,7 @@ window.showTab = function(t) {
   const idx   = names.indexOf(t);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
   if (t === 'finanzas') renderFinanzas();
+  if (t === 'pedidos')  renderPedidos();
   if (t === 'balance')  actualizarBalance();
   if (t === 'historial')renderHistorial();
 };
@@ -1291,6 +1343,208 @@ window.ejecutarCierre = function() {
   actualizarSelectProductos(); renderVentas(); renderFinanzas();
   renderGastos(); actualizarBalance(); renderHistorial();
   showTab('historial');
+};
+
+
+/* ════ PEDIDOS ════ */
+let pedidos = loadLocal('pedidos', []);
+let pedidoEditId = null;
+let pedidosTimer = null;
+
+function savePedidos() { saveRemote('pedidos', pedidos); }
+
+function stockLabel(cant) {
+  if (cant <= 0)  return '<span style="color:#C0392B;font-weight:500">Agotado</span>';
+  if (cant <= 2)  return '<span style="color:#C0392B;font-weight:500">Últimas unidades</span>';
+  if (cant <= 5)  return '<span style="color:#FF8C00;font-weight:500">Pocas unidades</span>';
+  return '<span style="color:#3D7A25;font-weight:500">Disponible</span>';
+}
+
+function tiempoRestante(expira) {
+  const mins = Math.floor((expira - Date.now()) / 60000);
+  const segs = Math.floor(((expira - Date.now()) % 60000) / 1000);
+  if (mins < 0) return { txt: 'Expirado', clase: 'rojo', timerClase: 'timer-rojo' };
+  const txt = mins + ':' + String(Math.max(0,segs)).padStart(2,'0');
+  if (mins < 5)  return { txt, clase: 'rojo',     timerClase: 'timer-rojo' };
+  if (mins < 10) return { txt, clase: 'amarillo',  timerClase: 'timer-amarillo' };
+  return { txt, clase: 'verde', timerClase: 'timer-verde' };
+}
+
+function renderPedidos() {
+  const activos = pedidos.filter(p => p.estado === 'pendiente').sort((a,b) => a.expira - b.expira);
+  document.getElementById('p-count').textContent = activos.length;
+  const total = activos.reduce((a,p) => a + p.monto, 0);
+  document.getElementById('p-total').textContent = fmt(total);
+  const lista = document.getElementById('p-lista');
+  if (!activos.length) { lista.innerHTML = '<div class="empty">Sin pedidos activos</div>'; return; }
+  lista.innerHTML = activos.map(p => {
+    const { txt, clase, timerClase } = tiempoRestante(p.expira);
+    const itemsHtml = (p.items||[]).map(it =>
+      `<span class="pill pill-lemon" style="margin-right:4px">${it.producto}</span> x${it.cantidad} · ${fmt(it.monto)}`
+    ).join('<br>');
+    return `<div class="pedido-card ${clase}" id="pcard-${p.id}">
+      <div class="pedido-header">
+        <div>
+          <div class="pedido-cliente">${p.cliente||'Sin nombre'}</div>
+          <div style="font-size:11px;color:var(--text3)">${p.ciudad||''} · ${p.hora||''}</div>
+        </div>
+        <span class="pedido-timer ${timerClase}">⏱ ${txt}</span>
+      </div>
+      <div class="pedido-items">${itemsHtml}</div>
+      <div style="font-weight:500;font-size:13px;margin-bottom:10px;color:var(--lime-dark)">Total: ${fmt(p.monto)}</div>
+      <div class="pedido-btns">
+        <button class="btn btn-sm btn-vender" onclick="venderPedido(${p.id})">✓ Vender</button>
+        <button class="btn btn-sm btn-editar" onclick="editarPedido(${p.id})">✎ Editar</button>
+        <button class="btn btn-sm btn-cancelar" onclick="cancelarPedido(${p.id})">✕ Cancelar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function checkExpiraciones() {
+  const ahora = Date.now();
+  let changed = false;
+  pedidos.forEach(p => {
+    if (p.estado === 'pendiente' && p.expira < ahora) {
+      p.estado = 'cancelado';
+      (p.items||[]).forEach(it => {
+        const prod = productos.find(x => x.nombre === it.producto);
+        if (prod) prod.cantidad += it.cantidad;
+      });
+      changed = true;
+    }
+  });
+  if (changed) { savePedidos(); saveRemote('productos', productos); renderInventario(); actualizarSelectProductos(); }
+  renderPedidos();
+}
+
+function startPedidosTimer() {
+  if (pedidosTimer) clearInterval(pedidosTimer);
+  pedidosTimer = setInterval(checkExpiraciones, 10000);
+}
+
+window.venderPedido = function(id) {
+  const p = pedidos.find(x => x.id === id);
+  if (!p) return;
+  p.estado = 'vendido';
+  ventas.push({
+    id: Date.now(),
+    cliente: p.cliente || 'Sin nombre',
+    items: p.items,
+    monto: p.monto,
+    ciudad: p.ciudad || 'Caracas',
+    fecha: today(),
+    direccion: p.direccion || '',
+    hora: new Date().toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'})
+  });
+  saveRemote('ventas', ventas);
+  savePedidos();
+  renderPedidos(); renderVentas(); renderFinanzas(); actualizarBalance();
+};
+
+window.cancelarPedido = function(id) {
+  const p = pedidos.find(x => x.id === id);
+  if (!p) return;
+  p.estado = 'cancelado';
+  (p.items||[]).forEach(it => {
+    const prod = productos.find(x => x.nombre === it.producto);
+    if (prod) prod.cantidad += it.cantidad;
+  });
+  savePedidos(); saveRemote('productos', productos);
+  renderPedidos(); renderInventario(); actualizarSelectProductos();
+};
+
+window.editarPedido = function(id) {
+  const p = pedidos.find(x => x.id === id);
+  if (!p) return;
+  pedidoEditId = id;
+  document.getElementById('edit-cliente-label').textContent = 'Cliente: ' + (p.cliente||'Sin nombre');
+  const cont = document.getElementById('edit-items-container');
+  cont.innerHTML = '';
+  (p.items||[]).forEach((it, i) => { addEditItem(it); });
+  document.getElementById('modal-edit-pedido').classList.add('show');
+};
+
+window.addEditItem = function(it) {
+  const cont = document.getElementById('edit-items-container');
+  const i = cont.children.length;
+  const div = document.createElement('div');
+  div.className = 'form-row';
+  div.style.cssText = 'background:var(--beige);border-radius:14px;padding:8px 10px;margin-bottom:0;border:1px solid var(--border-light)';
+  div.innerHTML = `
+    <div class="form-group">
+      <label>Categoría</label>
+      <select class="edit-cat" id="ecat-${i}" onchange="onEditCatChange(${i})">
+        ${buildCatOptions()}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Producto</label>
+      <select class="edit-prod" id="eprod-${i}">
+        <option value="">← Categoría</option>
+      </select>
+    </div>
+    <div class="form-group" style="max-width:80px">
+      <label>Cant.</label>
+      <input type="number" class="edit-cant" id="ecant-${i}" min="1" value="${it ? it.cantidad : 1}">
+    </div>
+    <div class="form-group" style="max-width:100px">
+      <label>Monto ($)</label>
+      <input type="number" class="edit-monto" id="emonto-${i}" placeholder="0.00" step="0.01" value="${it ? it.monto : ''}">
+    </div>
+    <div class="form-group" style="max-width:40px;justify-content:flex-end;padding-top:18px">
+      <button class="btn btn-sm" onclick="this.closest('div.form-row').remove()" style="color:var(--danger);border-color:#F5C2BF">✕</button>
+    </div>`;
+  cont.appendChild(div);
+  if (it) {
+    const catSel = document.getElementById('ecat-' + i);
+    const cat = (productos.find(x => x.nombre === it.producto)||{}).categoria;
+    if (cat) { catSel.value = cat; onEditCatChange(i); setTimeout(() => { document.getElementById('eprod-'+i).value = it.producto; }, 0); }
+  }
+};
+
+window.onEditCatChange = function(i) {
+  const cat = document.getElementById('ecat-' + i)?.value;
+  const sel = document.getElementById('eprod-' + i);
+  if (sel) sel.innerHTML = buildProdOptions(cat);
+};
+
+window.guardarEditPedido = function() {
+  const p = pedidos.find(x => x.id === pedidoEditId);
+  if (!p) return;
+  const cont = document.getElementById('edit-items-container');
+  const rows = cont.querySelectorAll('.form-row');
+  const items = [];
+  let ok = true;
+  rows.forEach((row, i) => {
+    const prod  = row.querySelector('.edit-prod')?.value;
+    const cant  = parseInt(row.querySelector('.edit-cant')?.value)||1;
+    const monto = parseFloat(row.querySelector('.edit-monto')?.value)||0;
+    if (!prod || !monto) { ok = false; return; }
+    items.push({ producto: prod, cantidad: cant, monto });
+  });
+  if (!ok || !items.length) { alert('Completa todos los productos.'); return; }
+  // devolver stock viejo
+  (p.items||[]).forEach(it => {
+    const prod = productos.find(x => x.nombre === it.producto);
+    if (prod) prod.cantidad += it.cantidad;
+  });
+  // descontar stock nuevo
+  for (const it of items) {
+    const prod = productos.find(x => x.nombre === it.producto);
+    if (prod && prod.cantidad < it.cantidad) { alert('Stock insuficiente: ' + it.producto); return; }
+    if (prod) prod.cantidad -= it.cantidad;
+  }
+  p.items = items;
+  p.monto = items.reduce((a,it) => a + it.monto, 0);
+  saveRemote('productos', productos); savePedidos();
+  cerrarEditModal();
+  renderPedidos(); renderInventario(); actualizarSelectProductos();
+};
+
+window.cerrarEditModal = function() {
+  document.getElementById('modal-edit-pedido').classList.remove('show');
+  pedidoEditId = null;
 };
 
 /* ════ BOOT ════ */
