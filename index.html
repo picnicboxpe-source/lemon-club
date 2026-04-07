@@ -608,6 +608,27 @@ tr:hover td { background: rgba(200,212,0,0.05); }
           <input type="text" id="i-otros-nombre" placeholder="Especifica la categoría">
         </div>
         <div class="form-group"><label>Cantidad inicial</label><input type="number" id="i-cantidad" min="0" value="0"></div>
+        <div class="form-group"><label>Precio ($) — catálogo</label><input type="number" id="i-precio" placeholder="0.00" step="0.01" min="0"></div>
+      </div>
+      <!-- Foto del producto -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:500;margin-bottom:8px">Foto del producto (catálogo)</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button class="btn btn-sm" id="foto-tab-url" onclick="switchFotoTab('url')" style="background:#EDF0A0;color:var(--lemon-deep);border-color:#C0CE40;font-weight:500">🔗 URL</button>
+          <button class="btn btn-sm" id="foto-tab-file" onclick="switchFotoTab('file')" style="">📁 Archivo</button>
+        </div>
+        <div id="foto-url-panel">
+          <input type="text" id="i-foto-url" placeholder="https://... o link de Google Drive"
+            style="width:100%;padding:9px 13px;border-radius:16px;border:1.5px solid var(--border-light);background:var(--white);color:var(--text);font-size:13px;outline:none;font-family:'DM Sans',sans-serif">
+        </div>
+        <div id="foto-file-panel" style="display:none">
+          <input type="file" id="i-foto-file" accept="image/*" onchange="previewFoto(this)"
+            style="width:100%;padding:9px 13px;border-radius:16px;border:1.5px solid var(--border-light);background:var(--white);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif">
+        </div>
+        <div id="foto-preview" style="display:none;margin-top:10px">
+          <img id="foto-preview-img" src="" alt="preview"
+            style="width:80px;height:80px;object-fit:cover;border-radius:14px;border:1.5px solid var(--border-light)">
+        </div>
       </div>
       <button class="btn btn-primary" id="btn-add-prod" onclick="agregarProducto()">+ Agregar producto</button>
       <div style="margin-top:16px;display:flex;gap:6px;flex-wrap:wrap" id="i-cats-filter"></div>
@@ -1130,12 +1151,21 @@ window.agregarProducto = function() {
   const nombre = document.getElementById('i-nombre').value.trim();
   let cat = document.getElementById('i-categoria').value;
   if (cat === 'Otros') { const c = document.getElementById('i-otros-nombre').value.trim(); if (c) cat = c; }
-  const cant = parseInt(document.getElementById('i-cantidad').value) || 0;
+  const cant   = parseInt(document.getElementById('i-cantidad').value) || 0;
+  const precio = parseFloat(document.getElementById('i-precio').value) || 0;
+  const fotoUrl  = document.getElementById('i-foto-url').value.trim();
+  const fotoB64  = document.getElementById('i-foto-file')._b64 || '';
+  const foto     = fotoB64 || normalizarFotoUrl(fotoUrl);
   if (!nombre) { alert('Ingresa un nombre de producto.'); return; }
-  productos.push({ id: prodIdCounter++, nombre, categoria: cat, cantidad: cant });
+  productos.push({ id: prodIdCounter++, nombre, categoria: cat, cantidad: cant, precio, foto });
   saveRemote('productos', productos); saveRemote('prodId', prodIdCounter);
   document.getElementById('i-nombre').value       = '';
   document.getElementById('i-cantidad').value     = 0;
+  document.getElementById('i-precio').value       = '';
+  document.getElementById('i-foto-url').value     = '';
+  document.getElementById('i-foto-file').value    = '';
+  document.getElementById('i-foto-file')._b64     = '';
+  document.getElementById('foto-preview').style.display = 'none';
   document.getElementById('i-otros-nombre').value = '';
   document.getElementById('otros-group').style.display = 'none';
   actualizarSelectProductos(); renderInventario();
@@ -1152,8 +1182,13 @@ function renderInventario() {
   const isAdmin = currentRole === 'admin';
   if (!lista.length) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1">Sin productos</div>'; return; }
   grid.innerHTML = lista.map(p => `<div class="inv-card">
+    ${p.foto ? `<div style="width:100%;height:90px;border-radius:14px 14px 0 0;overflow:hidden;margin:-14px -14px 10px -14px;width:calc(100% + 28px)"><img src="${p.foto}" style="width:100%;height:90px;object-fit:cover" loading="lazy"></div>` : ''}
     <div class="inv-card-name">${p.nombre}</div>
-    <div class="inv-cat"><span class="pill pill-lime">${p.categoria}</span></div>
+    <div class="inv-cat" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <span class="pill pill-lime">${p.categoria}</span>
+      ${p.precio ? `<span class="pill" style="background:#EDF0A0;color:var(--lemon-deep)">$${Number(p.precio).toFixed(2)}</span>` : ''}
+      ${isAdmin && p.foto ? `<button class="btn btn-sm" onclick="editarFoto(${p.id})" style="font-size:10px;padding:2px 8px">✎ foto</button>` : ''}
+    </div>
     <div class="inv-qty">
       ${isAdmin ? `<button class="qty-btn" onclick="cambiarQty(${p.id},-1)">−</button>` : ''}
       <span class="qty-val">${p.cantidad}</span>
@@ -1545,6 +1580,55 @@ window.guardarEditPedido = function() {
 window.cerrarEditModal = function() {
   document.getElementById('modal-edit-pedido').classList.remove('show');
   pedidoEditId = null;
+};
+
+
+/* ════ FOTO HELPERS ════ */
+window.switchFotoTab = function(tab) {
+  const urlPanel  = document.getElementById('foto-url-panel');
+  const filePanel = document.getElementById('foto-file-panel');
+  const btnUrl    = document.getElementById('foto-tab-url');
+  const btnFile   = document.getElementById('foto-tab-file');
+  if (tab === 'url') {
+    urlPanel.style.display  = 'block';  filePanel.style.display = 'none';
+    btnUrl.style.background = '#EDF0A0'; btnUrl.style.color = 'var(--lemon-deep)'; btnUrl.style.borderColor = '#C0CE40'; btnUrl.style.fontWeight = '500';
+    btnFile.style.background = ''; btnFile.style.color = ''; btnFile.style.borderColor = ''; btnFile.style.fontWeight = '';
+  } else {
+    urlPanel.style.display  = 'none';   filePanel.style.display = 'block';
+    btnFile.style.background = '#EDF0A0'; btnFile.style.color = 'var(--lemon-deep)'; btnFile.style.borderColor = '#C0CE40'; btnFile.style.fontWeight = '500';
+    btnUrl.style.background = ''; btnUrl.style.color = ''; btnUrl.style.borderColor = ''; btnUrl.style.fontWeight = '';
+  }
+};
+
+window.previewFoto = function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    input._b64 = e.target.result;
+    const prev = document.getElementById('foto-preview');
+    document.getElementById('foto-preview-img').src = e.target.result;
+    prev.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+};
+
+function normalizarFotoUrl(url) {
+  if (!url) return '';
+  // Convertir Google Drive share link → direct link
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return 'https://drive.google.com/uc?export=view&id=' + m[1];
+  return url;
+}
+
+window.editarFoto = function(id) {
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+  const url = prompt('URL de la foto (o pega link de Google Drive):\nActual: ' + (p.foto||'sin foto'), p.foto||'');
+  if (url === null) return;
+  p.foto = normalizarFotoUrl(url.trim());
+  saveRemote('productos', productos);
+  renderInventario();
 };
 
 /* ════ BOOT ════ */
