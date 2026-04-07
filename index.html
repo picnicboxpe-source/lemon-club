@@ -698,6 +698,28 @@ tr:hover td { background: rgba(200,212,0,0.05); }
         <div class="metric"><div class="metric-label">Total gastos</div><div class="metric-value mv-red" id="b-gastos">$0.00</div></div>
         <div class="metric"><div class="metric-label">Utilidad neta</div><div class="metric-value mv-green" id="b-util">$0.00</div></div>
       </div>
+      <!-- Cuadro soles -->
+      <div style="background:linear-gradient(135deg,#FFF8E8,#FFF0CC);border:1.5px solid #FFD09A;border-radius:20px;padding:16px 18px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-size:10px;color:var(--brown);text-transform:uppercase;letter-spacing:.8px;font-weight:500;margin-bottom:4px">Utilidad en soles (PEN)</div>
+            <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:600;color:var(--brown)" id="b-soles">S/ 0.00</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Tasa USD/PEN</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="b-tasa" step="0.01" min="0.1" value="3.80"
+                style="width:80px;padding:6px 10px;border-radius:12px;border:1.5px solid #FFD09A;background:#fff;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;text-align:center"
+                oninput="actualizarBalance()">
+              <button onclick="fetchTasaSoles()" title="Actualizar tasa del día"
+                style="background:#FF8C00;color:#fff;border:none;border-radius:12px;padding:6px 10px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500">
+                ↻ Hoy
+              </button>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px" id="b-tasa-fecha">Tasa manual</div>
+          </div>
+        </div>
+      </div>
       <hr class="divider">
       <div class="section-title">Distribución por socios</div>
       <div style="margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -769,13 +791,13 @@ import { getDatabase, ref, set, push, remove, onValue, serverTimestamp, onDiscon
    6. Copia los valores y reemplaza los de abajo
 ════════════════════════════════════════════════ */
 const firebaseConfig = {
-  apiKey:            "AIzaSyCcf8QZM6T6fb5tHvIQx86Ine045Dr6tLM",
-  authDomain:        "lemonclubapp.firebaseapp.com",
-  databaseURL:       "https://lemonclubapp-default-rtdb.firebaseio.com",
-  projectId:         "lemonclubapp",
-  storageBucket:     "lemonclubapp.firebasestorage.app",
-  messagingSenderId: "257292451659",
-  appId:             "1:257292451659:web:16f0cf0bc9db44dca8f2ce"
+  apiKey:            "TU_API_KEY",
+  authDomain:        "TU_PROYECTO.firebaseapp.com",
+  databaseURL:       "https://TU_PROYECTO-default-rtdb.firebaseio.com",
+  projectId:         "TU_PROYECTO",
+  storageBucket:     "TU_PROYECTO.appspot.com",
+  messagingSenderId: "TU_SENDER_ID",
+  appId:             "TU_APP_ID"
 };
 
 /* ── MODO OFFLINE (fallback si Firebase no está configurado) ── */
@@ -977,7 +999,8 @@ function buildCatOptions() {
 
 function buildProdOptions(cat) {
   if (!cat) return '<option value="">← Elige categoría</option>';
-  const lista = productos.filter(p => p.categoria === cat);
+  const lista = productos.filter(p => p.categoria === cat)
+    .slice().sort((a,b) => a.nombre.localeCompare(b.nombre, 'es'));
   if (!lista.length) return '<option value="">Sin productos</option>';
   return '<option value="">Seleccionar...</option>' +
     lista.map(p => `<option value="${p.nombre}">${p.nombre} (${p.cantidad})</option>`).join('');
@@ -1019,10 +1042,6 @@ window.generarFilasProductos = function() {
           <option value="">← Elige categoría</option>
         </select>
       </div>
-      <div class="form-group" style="max-width:90px">
-        <label>Cant.</label>
-        <input type="number" class="v-cant-input" id="v-cant-${i}" min="1" value="1">
-      </div>
       <div class="form-group" style="max-width:120px">
         <label>Monto ($)</label>
         <input type="number" class="v-monto-input" id="v-monto-${i}" placeholder="0.00" step="0.01">
@@ -1040,7 +1059,7 @@ window.registrarVenta = function() {
   const items = [];
   for (let i = 0; i < n; i++) {
     const prod  = document.getElementById('v-prod-' + i)?.value;
-    const cant  = parseInt(document.getElementById('v-cant-' + i)?.value) || 1;
+    const cant  = 1;
     const monto = parseFloat(document.getElementById('v-monto-' + i)?.value) || 0;
     if (!prod || !monto) { alert('Completa producto y monto en todas las filas.'); return; }
     const p = productos.find(x => x.nombre === prod);
@@ -1098,6 +1117,63 @@ function renderVentas() {
   const tb = document.getElementById('v-tabla');
   const canDel = currentRole === 'admin';
   if (!list.length) { tb.innerHTML = '<tr><td colspan="6" class="empty">Sin ventas en este período</td></tr>'; return; }
+
+  // Si es filtro "todos" agrupa por mes
+  if (filtroV === 'todos') {
+    const porMes = {};
+    list.forEach(v => {
+      const ym = v.fecha ? v.fecha.substring(0,7) : 'sin-fecha';
+      if (!porMes[ym]) porMes[ym] = [];
+      porMes[ym].push(v);
+    });
+    const meses = Object.keys(porMes).sort().reverse();
+    const MESES_ES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    tb.innerHTML = meses.map(ym => {
+      const [y, m] = ym.split('-');
+      const label = ym === 'sin-fecha' ? 'Sin fecha' : (MESES_ES[parseInt(m)] + ' ' + y);
+      const lista = porMes[ym].slice().reverse();
+      const totalMes = lista.reduce((a,v) => a+v.monto, 0);
+      const mesId = 'mes_' + ym.replace('-','_');
+      const filas = lista.map(v => {
+        const items = v.items || [{ producto: v.producto, cantidad: v.cantidad, monto: v.monto }];
+        const detId = 'det_' + v.id;
+        const detalle = items.map(it =>
+          `<div style="font-size:12px;padding:3px 0;display:flex;gap:8px;align-items:center">
+            <span class="pill pill-lemon">${it.producto}</span>
+            <span style="color:var(--text3)">x${it.cantidad}</span>
+            <span style="font-weight:500">${fmt(it.monto)}</span>
+          </div>`).join('');
+        return `<tr>
+          <td>
+            <div style="font-weight:500;margin-bottom:4px">${v.cliente||'Sin nombre'}</div>
+            <button onclick="var el=document.getElementById('${detId}');el.style.display=el.style.display==='none'?'block':'none'"
+              style="font-size:11px;background:none;border:none;cursor:pointer;color:var(--lemon-dark);padding:0;font-family:inherit">
+              &#9658; ${items.length} producto${items.length>1?'s':''}
+            </button>
+            <div id="${detId}" style="display:none;margin-top:6px;padding:8px;background:var(--beige);border-radius:12px">${detalle}</div>
+          </td>
+          <td><span class="pill pill-orange">${v.ciudad}</span></td>
+          <td style="font-weight:500;color:var(--lime-dark)">${fmt(v.monto)}</td>
+          <td>${fmtDate(v.fecha)}</td>
+          <td style="font-size:12px;color:var(--text3)">${v.direccion||'—'}</td>
+          <td>${canDel?`<button class="btn btn-sm" onclick="eliminarVenta(${v.id})" style="color:var(--danger);border-color:#F5C2BF">&#10005;</button>`:''}</td>
+        </tr>`;
+      }).join('');
+      return `<tr id="hdr_${mesId}" style="cursor:pointer;background:linear-gradient(135deg,#F8F5E4,#EEE5C4)" onclick="toggleMes('${mesId}')">
+        <td colspan="6" style="padding:10px 12px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-family:'Playfair Display',serif;font-size:14px;font-weight:500;color:var(--lemon-deep)">▸ ${label}</span>
+            <span style="font-size:12px;color:var(--text2)">${lista.length} ventas · ${fmt(totalMes)}</span>
+          </div>
+        </td>
+      </tr>
+      <tr id="body_${mesId}" style="display:none"><td colspan="6" style="padding:0">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">${filas}</table>
+      </td></tr>`;
+    }).join('');
+    return;
+  }
+
   tb.innerHTML = list.slice().reverse().map(v => {
     const items = v.items || [{ producto: v.producto, cantidad: v.cantidad, monto: v.monto }];
     const detId = 'det_' + v.id;
@@ -1286,6 +1362,25 @@ window.eliminarGasto = function(id) {
 };
 
 /* ════ BALANCE ════ */
+async function fetchTasaSoles() {
+  const btn = document.querySelector('[onclick="fetchTasaSoles()"]');
+  if (btn) { btn.textContent = '...'; btn.disabled = true; }
+  try {
+    const r = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+    const data = await r.json();
+    const tasa = data.rates?.PEN;
+    if (tasa) {
+      document.getElementById('b-tasa').value = tasa.toFixed(3);
+      const hoy = new Date().toLocaleDateString('es-PE', {day:'2-digit',month:'2-digit',year:'numeric'});
+      document.getElementById('b-tasa-fecha').textContent = 'Actualizado ' + hoy;
+      actualizarBalance();
+    }
+  } catch(e) {
+    document.getElementById('b-tasa-fecha').textContent = 'Sin conexión — tasa manual';
+  }
+  if (btn) { btn.textContent = '↻ Hoy'; btn.disabled = false; }
+}
+
 function actualizarBalance() {
   const tV   = ventas.reduce((a,v) => a+v.monto, 0);
   const tG   = gastos.reduce((a,g) => a+g.monto, 0);
@@ -1294,6 +1389,9 @@ function actualizarBalance() {
   document.getElementById('b-gastos').textContent = fmt(tG);
   const uEl = document.getElementById('b-util');
   uEl.textContent = fmt(util); uEl.className = 'metric-value ' + (util >= 0 ? 'mv-green' : 'mv-red');
+  const tasa = parseFloat(document.getElementById('b-tasa')?.value) || 3.80;
+  const soles = util * tasa;
+  document.getElementById('b-soles').textContent = 'S/ ' + soles.toFixed(2);
   const tipo = document.getElementById('b-tipo').value;
   document.getElementById('b-custom').style.display = tipo === 'custom' ? 'block' : 'none';
   let pcts = [33.33, 33.33, 33.34];
@@ -1629,6 +1727,17 @@ window.editarFoto = function(id) {
   p.foto = normalizarFotoUrl(url.trim());
   saveRemote('productos', productos);
   renderInventario();
+};
+
+
+window.toggleMes = function(mesId) {
+  const body = document.getElementById('body_' + mesId);
+  const hdr  = document.getElementById('hdr_'  + mesId);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'table-row';
+  const arrow = hdr?.querySelector('span');
+  if (arrow) arrow.textContent = arrow.textContent.replace(open ? '▾' : '▸', open ? '▸' : '▾');
 };
 
 /* ════ BOOT ════ */

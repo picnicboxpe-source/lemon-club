@@ -204,13 +204,13 @@ import { getDatabase, ref, set, push, onValue }
 /* ════ CONFIGURACIÓN FIREBASE ════
    Usa exactamente los mismos valores que en index.html */
 const firebaseConfig = {
-  apiKey:            "AIzaSyCcf8QZM6T6fb5tHvIQx86Ine045Dr6tLM",
-  authDomain:        "lemonclubapp.firebaseapp.com",
-  databaseURL:       "https://lemonclubapp-default-rtdb.firebaseio.com",
-  projectId:         "lemonclubapp",
-  storageBucket:     "lemonclubapp.firebasestorage.app",
-  messagingSenderId: "257292451659",
-  appId:             "1:257292451659:web:16f0cf0bc9db44dca8f2ce"
+  apiKey:            "TU_API_KEY",
+  authDomain:        "TU_PROYECTO.firebaseapp.com",
+  databaseURL:       "https://TU_PROYECTO-default-rtdb.firebaseio.com",
+  projectId:         "TU_PROYECTO",
+  storageBucket:     "TU_PROYECTO.appspot.com",
+  messagingSenderId: "TU_SENDER_ID",
+  appId:             "TU_APP_ID"
 };
 
 /* Número de WhatsApp del negocio — incluir código de país sin + */
@@ -261,22 +261,32 @@ window.filtrarCat = function(cat, el) {
   renderProductos();
 };
 
+function sortProductos(arr) {
+  return arr.slice().sort((a,b) => {
+    const sA = getStockReal(a);
+    const sB = getStockReal(b);
+    const agA = sA <= 0 ? 1 : 0;
+    const agB = sB <= 0 ? 1 : 0;
+    if (agA !== agB) return agA - agB;
+    return a.nombre.localeCompare(b.nombre, 'es');
+  });
+}
+
 function renderProductos() {
   const lista = catActiva === 'Todos' ? productos : productos.filter(p => p.categoria === catActiva);
   const wrap = document.getElementById('cat-wrap');
   if (!lista.length) { wrap.innerHTML = '<div class="empty-cat">Sin productos en esta categoría</div>'; return; }
 
-  // Agrupar por categoría cuando es "Todos"
   if (catActiva === 'Todos') {
     const cats = getCategorias();
     wrap.innerHTML = cats.map(cat => {
-      const prods = productos.filter(p => p.categoria === cat);
+      const prods = sortProductos(productos.filter(p => p.categoria === cat));
       if (!prods.length) return '';
       return `<div class="cat-section-title">${cat}</div>
         <div class="prod-grid">${prods.map(p => cardHtml(p)).join('')}</div>`;
     }).join('');
   } else {
-    wrap.innerHTML = `<div class="prod-grid">${lista.map(p => cardHtml(p)).join('')}</div>`;
+    wrap.innerHTML = `<div class="prod-grid">${sortProductos(lista).map(p => cardHtml(p)).join('')}</div>`;
   }
 }
 
