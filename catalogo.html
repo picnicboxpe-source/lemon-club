@@ -137,6 +137,15 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   </button>
 </div>
 
+<!-- Branding Banner (read from Firebase) -->
+<div id="cat-banner" style="display:none;padding:16px 20px;text-align:center;position:relative;overflow:hidden">
+  <div id="cat-banner-bg" style="position:absolute;inset:0;z-index:0"></div>
+  <div style="position:relative;z-index:1">
+    <div id="cat-banner-titulo" style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;margin-bottom:4px"></div>
+    <div id="cat-banner-subtitulo" style="font-size:13px;opacity:.85"></div>
+  </div>
+</div>
+
 <div class="cat-filters" id="cat-filters">
   <button class="cat-filter active" onclick="filtrarCat('Todos',this)">Todos</button>
 </div>
@@ -564,6 +573,48 @@ function initCatalogo() {
     const val = snap.val();
     pedidos = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
   });
+
+  onValue(ref(db, 'lemonclub/branding'), snap => {
+    const b = snap.val();
+    if (!b) return;
+    aplicarBranding(b);
+  });
+}
+
+function aplicarBranding(b) {
+  // Header
+  const hdr = document.querySelector('.cat-header');
+  if (hdr && b.headerBg) hdr.style.background = b.headerBg;
+  const logo = document.querySelector('.cat-logo');
+  if (logo) {
+    if (b.logoTexto) logo.childNodes[0] && (logo.childNodes[0].textContent = b.logoTexto + ' ');
+    if (b.logoColor) logo.style.color = b.logoColor;
+  }
+  // Banner
+  const banner = document.getElementById('cat-banner');
+  const bannerBg = document.getElementById('cat-banner-bg');
+  const bannerTit = document.getElementById('cat-banner-titulo');
+  const bannerSub = document.getElementById('cat-banner-subtitulo');
+  if (b.bannerActivo && banner) {
+    banner.style.display = 'block';
+    if (b.bannerBg1 && b.bannerBg2) bannerBg.style.background = `linear-gradient(135deg,${b.bannerBg1},${b.bannerBg2})`;
+    else if (b.bannerBg1) bannerBg.style.background = b.bannerBg1;
+    if (b.bannerTitulo) { bannerTit.textContent = b.bannerTitulo; bannerTit.style.color = b.bannerTextColor || '#2C1F0E'; }
+    if (b.bannerSubtitulo) { bannerSub.textContent = b.bannerSubtitulo; bannerSub.style.color = b.bannerTextColor || '#6B5440'; }
+    if (b.bannerFoto) {
+      bannerBg.style.backgroundImage = `url(${b.bannerFoto})`;
+      bannerBg.style.backgroundSize = 'cover';
+      bannerBg.style.backgroundPosition = 'center';
+    }
+  }
+  // Body bg
+  if (b.bodyBg) document.body.style.background = b.bodyBg;
+  // Accent color (botón sticky, carrito)
+  if (b.accentColor) {
+    document.querySelectorAll('.sticky-order-btn,.btn-realizar,.cart-btn').forEach(el => {
+      el.style.background = b.accentColor;
+    });
+  }
 }
 
 initCatalogo();

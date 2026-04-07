@@ -1402,14 +1402,20 @@ function actualizarBalance() {
       parseFloat(document.getElementById('b-s3').value) || 0,
     ];
   }
-  document.getElementById('b-socios').innerHTML = ['Socio 1','Socio 2','Socio 3'].map((n,i) => `
-    <div class="socio-card">
+  document.getElementById('b-socios').innerHTML = ['Socio 1','Socio 2','Socio 3'].map((n,i) => {
+    const usd = util * pcts[i] / 100;
+    const pen = usd * tasa;
+    return `<div class="socio-card">
       <div>
         <div class="socio-name">${n}</div>
         <div class="socio-pct">${pcts[i].toFixed(1)}% de participación</div>
       </div>
-      <div class="socio-amt">${fmt(util * pcts[i] / 100)}</div>
-    </div>`).join('');
+      <div style="text-align:right">
+        <div class="socio-amt">${fmt(usd)}</div>
+        <div style="font-size:12px;color:var(--brown);font-weight:500;margin-top:2px">S/ ${pen.toFixed(2)}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 window.actualizarBalance = actualizarBalance;
