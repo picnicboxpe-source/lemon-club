@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Lemon Club 🍋 — Catálogo Interno</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --lemon:#C8D400; --lemon-dark:#8A9200; --lemon-deep:#4A5000;
+  --lime:#6DBE47; --lime-dark:#3D7A25;
+  --orange:#FF8C00; --tangerine:#FF6B35;
+  --cream:#FDFAF2; --beige:#F5EDD8; --beige-dark:#E8D9BC;
+  --brown:#7B4F2E; --brown-light:#F2E8DC;
+  --text:#2C1F0E; --text2:#6B5440; --text3:#9C8268;
+  --white:#FFFFFF; --danger:#C0392B;
+  --card-bg:#FFFEF7; --border:#DDD0B3; --border-light:#EEE4CA;
+  --shadow:rgba(123,79,46,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--beige);color:var(--text);font-size:14px;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 15% 20%,rgba(200,212,0,0.10) 0%,transparent 40%),radial-gradient(circle at 85% 70%,rgba(255,140,0,0.08) 0%,transparent 40%);pointer-events:none;z-index:0}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;z-index:1}
+.login-card{background:var(--card-bg);border:1.5px solid var(--border);border-radius:28px;padding:32px;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 40px var(--shadow)}
+.login-logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--lemon-deep);margin-bottom:4px}
+.login-sub{font-size:11px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:22px}
+.login-badge{display:inline-block;background:#EDF0A0;color:var(--lemon-deep);border:1px solid #C0CE40;border-radius:12px;padding:3px 12px;font-size:11px;font-weight:500;margin-bottom:20px}
+.pw-group{text-align:left;margin-bottom:14px}
+.pw-group label{font-size:10px;color:var(--text3);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.8px;font-weight:500}
+.pw-group input{width:100%;padding:10px 14px;border-radius:16px;border:1.5px solid var(--border);background:var(--white);color:var(--text);font-size:13px;outline:none;font-family:'DM Sans',sans-serif}
+.pw-group input:focus{border-color:var(--lemon)}
+.btn-login{width:100%;padding:11px;border:none;border-radius:18px;background:linear-gradient(135deg,#C8D400,#A0B000);color:var(--lemon-deep);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif}
+.alert-err{background:#FDECEA;color:#C0392B;border:1px solid #F5C2BF;border-radius:12px;padding:8px 14px;font-size:12px;margin-bottom:12px}
+
+/* HEADER */
+.cat-header{position:sticky;top:0;z-index:50;background:var(--card-bg);border-bottom:1.5px solid var(--border);padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;box-shadow:0 2px 12px var(--shadow)}
+.cat-logo{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;color:var(--lemon-deep);display:flex;align-items:center;gap:8px}
+.int-badge{background:#EDF0A0;color:var(--lemon-deep);border:1px solid #C0CE40;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:500}
+.header-right{display:flex;align-items:center;gap:8px}
+.btn-logout{font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:inherit}
+
+/* FILTER TABS */
+.cat-filters{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;position:sticky;top:55px;z-index:40;background:var(--beige)}
+.cat-filters::-webkit-scrollbar{display:none}
+.cat-filter{padding:6px 14px;border-radius:16px;font-size:12px;cursor:pointer;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text2);white-space:nowrap;font-family:'DM Sans',sans-serif;transition:all .15s}
+.cat-filter.active{background:linear-gradient(135deg,#F0F5B0,#D8E060);color:var(--lemon-deep);border-color:#C0CE40;font-weight:500}
+
+/* GRID */
+.cat-wrap{position:relative;z-index:1;padding:0 12px 40px}
+.cat-section-title{font-family:'Playfair Display',serif;font-size:14px;color:var(--text3);padding:12px 4px 8px;letter-spacing:.5px}
+.prod-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:4px}
+@media(min-width:500px){.prod-grid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:700px){.prod-grid{grid-template-columns:repeat(4,1fr)}}
+
+/* CARD */
+.prod-card{background:var(--card-bg);border:1.5px solid var(--border-light);border-radius:20px;overflow:hidden;transition:border-color .18s;position:relative}
+.prod-card:hover{border-color:var(--lemon)}
+.prod-card.agotado{opacity:.65}
+.prod-img{width:100%;aspect-ratio:1;background:linear-gradient(135deg,var(--beige),var(--beige-dark));display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.prod-img img{width:100%;height:100%;object-fit:cover;cursor:zoom-in;transition:transform .2s}
+.prod-img img:hover{transform:scale(1.04)}
+.prod-img-placeholder{font-size:32px;opacity:.35}
+.stock-badge{position:absolute;top:8px;right:8px;font-size:10px;font-weight:500;padding:2px 8px;border-radius:10px;pointer-events:none}
+.badge-disp{background:#D8F0C0;color:#3D7A25}
+.badge-poco{background:#FFE8C8;color:#8A4A00}
+.badge-ultimas{background:#FDECEA;color:#C0392B}
+.badge-agotado{background:#EEE4CA;color:var(--text3)}
+.prod-info{padding:10px}
+.prod-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px;line-height:1.3}
+.prod-cat{font-size:11px;color:var(--text3);margin-bottom:4px}
+.prod-precio{font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:var(--lemon-deep);margin-bottom:6px}
+.prod-stock{font-size:11px;color:var(--text3);margin-bottom:8px}
+.prod-stock span{font-weight:500;color:var(--text2)}
+
+/* EDIT OVERLAY */
+.edit-overlay{position:absolute;inset:0;background:rgba(245,237,216,0.96);border-radius:18px;padding:12px;display:none;flex-direction:column;gap:8px;z-index:10;overflow-y:auto}
+.edit-overlay.show{display:flex}
+.edit-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:500;margin-bottom:2px}
+.edit-input{width:100%;padding:7px 10px;border-radius:12px;border:1.5px solid var(--border-light);background:var(--white);color:var(--text);font-size:12px;outline:none;font-family:'DM Sans',sans-serif}
+.edit-input:focus{border-color:var(--lemon)}
+.edit-foto-tabs{display:flex;gap:5px;margin-bottom:4px}
+.edit-foto-tab{padding:3px 10px;border-radius:10px;font-size:10px;cursor:pointer;border:1px solid var(--border);background:var(--beige);color:var(--text2);font-family:'DM Sans',sans-serif}
+.edit-foto-tab.active{background:#EDF0A0;color:var(--lemon-deep);border-color:#C0CE40;font-weight:500}
+.edit-btns{display:flex;gap:6px;margin-top:4px}
+.btn-save{flex:1;background:linear-gradient(135deg,#C8D400,#A0B000);color:var(--lemon-deep);border:none;border-radius:12px;padding:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-cancel-edit{background:var(--beige);color:var(--text2);border:1px solid var(--border);border-radius:12px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+/* EDIT BUTTON on card */
+.btn-edit-card{position:absolute;bottom:10px;right:10px;background:var(--lemon-deep);color:#fff;border:none;border-radius:12px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;z-index:5;opacity:0;transition:opacity .18s}
+.prod-card:hover .btn-edit-card{opacity:1}
+@media(max-width:600px){.btn-edit-card{opacity:1}}
+
+/* LIGHTBOX */
+.lightbox{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.93);display:none;align-items:center;justify-content:center;flex-direction:column;overflow:hidden}
+.lightbox.open{display:flex}
+.lightbox-img-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:100vw;height:80vh;overflow:hidden;touch-action:none}
+.lightbox-img{max-width:95vw;max-height:78vh;object-fit:contain;border-radius:10px;user-select:none;transform-origin:center center;transition:transform .1s ease;will-change:transform}
+.lightbox-close{position:fixed;top:14px;right:14px;background:rgba(255,255,255,0.18);border:none;border-radius:50%;width:42px;height:42px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1001}
+.lightbox-info{position:fixed;bottom:20px;left:0;right:0;text-align:center;padding:0 20px;pointer-events:none}
+.lightbox-name{color:rgba(255,255,255,0.85);font-size:13px;font-family:'DM Sans',sans-serif}
+.lightbox-precio{color:#C8D400;font-family:'Playfair Display',serif;font-size:17px;margin-top:3px}
+.lightbox-hint{color:rgba(255,255,255,0.35);font-size:11px;margin-top:6px}
+
+.empty-cat{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px}
+.loading{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--lemon-deep);color:#fff;border-radius:16px;padding:10px 20px;font-size:13px;z-index:200;transition:transform .3s ease;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">Lemon Club 🍋</div>
+    <div class="login-sub">catálogo interno</div>
+    <div class="login-badge">Solo equipo</div>
+    <div id="login-err" style="display:none" class="alert-err"></div>
+    <div class="pw-group">
+      <label>Contraseña</label>
+      <input type="password" id="pw-input" placeholder="Contraseña del equipo" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-login" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" style="display:none">
+
+  <div class="cat-header">
+    <div class="cat-logo">
+      Lemon Club 🍋
+      <span class="int-badge">Interno</span>
+    </div>
+    <div class="header-right">
+      <div id="online-dot" style="display:flex;align-items:center;gap:5px;font-size:11px;color:#3D7A25;background:#E8F5E0;border:1px solid #A8D98A;border-radius:16px;padding:3px 10px">
+        <span style="width:7px;height:7px;border-radius:50%;background:#6DBE47;animation:pulse 2s infinite;display:inline-block"></span>
+        En línea
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="cat-filters" id="cat-filters">
+    <button class="cat-filter active" onclick="filtrarCat('Todos',this)">Todos</button>
+  </div>
+
+  <div class="cat-wrap" id="cat-wrap">
+    <div class="loading">Cargando catálogo...</div>
+  </div>
+
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" onclick="cerrarLightboxBtn()">✕</button>
+  <div class="lightbox-img-wrap" id="lightbox-wrap">
+    <img class="lightbox-img" id="lightbox-img" src="" alt="" draggable="false">
+  </div>
+  <div class="lightbox-info">
+    <div class="lightbox-name" id="lightbox-name"></div>
+    <div class="lightbox-precio" id="lightbox-precio"></div>
+    <div class="lightbox-hint">Pellizca para hacer zoom · Doble toque para restablecer</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">Guardado ✓</div>
+
+<style>
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+</style>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, onValue }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+/* ════ CONFIGURACIÓN FIREBASE — mismos valores que index.html ════ */
+const firebaseConfig = {
+  apiKey:            "AIzaSyCcf8QZM6T6fb5tHvIQx86Ine045Dr6tLM",
+  authDomain:        "lemonclubapp.firebaseapp.com",
+  databaseURL:       "https://lemonclubapp-default-rtdb.firebaseio.com",
+  projectId:         "lemonclubapp",
+  storageBucket:     "lemonclubapp.firebasestorage.app",
+  messagingSenderId: "257292451659",
+  appId:             "1:257292451659:web:16f0cf0bc9db44dca8f2ce"
+};
+
+/* ── Contraseña del equipo (puede ser la misma de vendedor o diferente) ── */
+const TEAM_PW = 'trabajo2026';
+
+const FIREBASE_OK = !firebaseConfig.apiKey.startsWith('TU_');
+let db = null;
+let productos = [];
+let pedidos   = [];
+let catActiva = 'Todos';
+
+/* ════ AUTH ════ */
+window.doLogin = function() {
+  const pw = document.getElementById('pw-input').value;
+  const err = document.getElementById('login-err');
+  if (pw === TEAM_PW || pw === 'lemon2026') {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    initCatalogo();
+  } else {
+    err.textContent = 'Contraseña incorrecta.';
+    err.style.display = 'block';
+  }
+};
+
+window.doLogout = function() {
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pw-input').value = '';
+};
+
+/* ════ UTILS ════ */
+const fmt = n => '$' + Number(n).toFixed(2);
+
+function stockInfo(cant) {
+  if (cant <= 0) return { label:'Agotado',          clase:'badge-agotado', disponible:false };
+  if (cant <= 2) return { label:'Últimas unidades',  clase:'badge-ultimas', disponible:true  };
+  if (cant <= 5) return { label:'Pocas unidades',    clase:'badge-poco',    disponible:true  };
+  return              { label:'Disponible',          clase:'badge-disp',    disponible:true  };
+}
+
+function getStockReal(prod) {
+  const reservado = pedidos
+    .filter(p => p.estado === 'pendiente')
+    .flatMap(p => p.items||[])
+    .filter(it => it.producto === prod.nombre)
+    .reduce((a,it) => a + it.cantidad, 0);
+  return Math.max(0, prod.cantidad - reservado);
+}
+
+function getCategorias() {
+  return [...new Set(productos.map(p => p.categoria))].sort();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function normalizarFotoUrl(url) {
+  if (!url) return '';
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return 'https://drive.google.com/uc?export=view&id=' + m[1];
+  return url;
+}
+
+/* ════ RENDER ════ */
+window.filtrarCat = function(cat, el) {
+  catActiva = cat;
+  document.querySelectorAll('.cat-filter').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderProductos();
+};
+
+function renderFilters() {
+  const cats = getCategorias();
+  const f = document.getElementById('cat-filters');
+  f.innerHTML = '<button class="cat-filter'+(catActiva==='Todos'?' active':'')+'" onclick="filtrarCat(\'Todos\',this)">Todos</button>' +
+    cats.map(c => `<button class="cat-filter${catActiva===c?' active':''}" onclick="filtrarCat('${c}',this)">${c}</button>`).join('');
+}
+
+function renderProductos() {
+  const lista = catActiva === 'Todos' ? productos : productos.filter(p => p.categoria === catActiva);
+  const wrap = document.getElementById('cat-wrap');
+  if (!lista.length) { wrap.innerHTML = '<div class="empty-cat">Sin productos</div>'; return; }
+  if (catActiva === 'Todos') {
+    wrap.innerHTML = getCategorias().map(cat => {
+      const prods = productos.filter(p => p.categoria === cat);
+      if (!prods.length) return '';
+      return `<div class="cat-section-title">${cat}</div><div class="prod-grid">${prods.map(p => cardHtml(p)).join('')}</div>`;
+    }).join('');
+  } else {
+    wrap.innerHTML = `<div class="prod-grid">${lista.map(p => cardHtml(p)).join('')}</div>`;
+  }
+}
+
+function cardHtml(p) {
+  const stock = getStockReal(p);
+  const info  = stockInfo(stock);
+  const agotado = !info.disponible;
+  const cid = 'card_' + p.id;
+  return `<div class="prod-card${agotado?' agotado':''}" id="${cid}">
+    <div class="prod-img">
+      ${p.foto
+        ? `<img src="${p.foto}" alt="${p.nombre}" loading="lazy" onclick="abrirLightbox('${p.foto}','${p.nombre}',${p.precio||0})">`
+        : `<div class="prod-img-placeholder">🍋</div>`}
+      <span class="stock-badge ${info.clase}">${info.label}</span>
+    </div>
+    <div class="prod-info">
+      <div class="prod-name">${p.nombre}</div>
+      <div class="prod-cat">${p.categoria}</div>
+      <div class="prod-precio">${p.precio ? fmt(p.precio) : '<span style="font-family:DM Sans,sans-serif;font-size:12px;font-weight:400;color:var(--text3)">Sin precio</span>'}</div>
+      <div class="prod-stock">Stock: <span>${stock}</span> uds.</div>
+    </div>
+    <button class="btn-edit-card" onclick="abrirEditar(${p.id})">✎ Editar</button>
+    <!-- EDIT OVERLAY -->
+    <div class="edit-overlay" id="edit_${p.id}">
+      <div>
+        <div class="edit-label">Nombre</div>
+        <input class="edit-input" id="en_${p.id}" value="${p.nombre.replace(/"/g,'&quot;')}">
+      </div>
+      <div>
+        <div class="edit-label">Precio ($)</div>
+        <input class="edit-input" id="ep_${p.id}" type="number" step="0.01" value="${p.precio||''}" placeholder="0.00">
+      </div>
+      <div>
+        <div class="edit-label">Stock</div>
+        <input class="edit-input" id="es_${p.id}" type="number" min="0" value="${p.cantidad}">
+      </div>
+      <div>
+        <div class="edit-label">Foto</div>
+        <div class="edit-foto-tabs">
+          <button class="edit-foto-tab active" id="etab-url-${p.id}" onclick="switchEditFotoTab(${p.id},'url')">🔗 URL</button>
+          <button class="edit-foto-tab" id="etab-file-${p.id}" onclick="switchEditFotoTab(${p.id},'file')">📁 Archivo</button>
+        </div>
+        <div id="efoto-url-${p.id}">
+          <input class="edit-input" id="efu_${p.id}" placeholder="URL o Google Drive" value="${(p.foto||'').replace(/"/g,'&quot;')}">
+        </div>
+        <div id="efoto-file-${p.id}" style="display:none">
+          <input type="file" accept="image/*" class="edit-input" id="eff_${p.id}" onchange="onEditFile(${p.id},this)" style="padding:4px">
+        </div>
+      </div>
+      <div class="edit-btns">
+        <button class="btn-cancel-edit" onclick="cerrarEditar(${p.id})">Cancelar</button>
+        <button class="btn-save" onclick="guardarEditar(${p.id})">Guardar ✓</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ════ EDITAR ════ */
+window.abrirEditar = function(id) {
+  document.querySelectorAll('.edit-overlay').forEach(o => o.classList.remove('show'));
+  document.getElementById('edit_' + id)?.classList.add('show');
+};
+
+window.cerrarEditar = function(id) {
+  document.getElementById('edit_' + id)?.classList.remove('show');
+};
+
+window.switchEditFotoTab = function(id, tab) {
+  const urlD  = document.getElementById('efoto-url-' + id);
+  const fileD = document.getElementById('efoto-file-' + id);
+  const btnU  = document.getElementById('etab-url-' + id);
+  const btnF  = document.getElementById('etab-file-' + id);
+  if (tab === 'url') {
+    urlD.style.display = 'block'; fileD.style.display = 'none';
+    btnU.classList.add('active'); btnF.classList.remove('active');
+  } else {
+    urlD.style.display = 'none'; fileD.style.display = 'block';
+    btnF.classList.add('active'); btnU.classList.remove('active');
+  }
+};
+
+window.onEditFile = function(id, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { input._b64 = e.target.result; };
+  reader.readAsDataURL(file);
+};
+
+window.guardarEditar = function(id) {
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+  const nuevoNombre  = document.getElementById('en_' + id)?.value.trim() || p.nombre;
+  const nuevoPrecio  = parseFloat(document.getElementById('ep_' + id)?.value) || 0;
+  const nuevoStock   = parseInt(document.getElementById('es_' + id)?.value) || 0;
+  const fileInput    = document.getElementById('eff_' + id);
+  const fotoB64      = fileInput?._b64 || '';
+  const fotoUrl      = document.getElementById('efu_' + id)?.value.trim() || '';
+  const nuevaFoto    = fotoB64 || normalizarFotoUrl(fotoUrl) || p.foto || '';
+
+  p.nombre   = nuevoNombre;
+  p.precio   = nuevoPrecio;
+  p.cantidad = nuevoStock;
+  p.foto     = nuevaFoto;
+
+  if (db) {
+    set(ref(db, 'lemonclub/productos'), productos)
+      .then(() => showToast('Guardado ✓'))
+      .catch(() => showToast('Error al guardar'));
+  } else {
+    showToast('Guardado localmente ✓');
+  }
+  renderProductos();
+};
+
+/* ════ LIGHTBOX CON PINCH ZOOM ════ */
+let lbScale = 1, lbMinScale = 1, lbMaxScale = 5;
+let lbLastDist = 0, lbPinching = false;
+let lbDragX = 0, lbDragY = 0, lbLastX = 0, lbLastY = 0, lbDragging = false, lbDragStart = null;
+
+function lbReset() {
+  lbScale = 1; lbDragX = 0; lbDragY = 0;
+  const img = document.getElementById('lightbox-img');
+  if (img) img.style.transform = 'scale(1) translate(0,0)';
+}
+
+function lbApply() {
+  const img = document.getElementById('lightbox-img');
+  if (img) img.style.transform = `scale(${lbScale}) translate(${lbDragX/lbScale}px,${lbDragY/lbScale}px)`;
+}
+
+window.abrirLightbox = function(src, nombre, precio) {
+  lbReset();
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox-name').textContent = nombre;
+  document.getElementById('lightbox-precio').textContent = precio ? '$' + Number(precio).toFixed(2) : '';
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+window.cerrarLightboxBtn = function() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+  lbReset();
+};
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarLightboxBtn(); });
+document.getElementById('lightbox').addEventListener('click', function(e) {
+  if (e.target === this && lbScale === 1) cerrarLightboxBtn();
+});
+
+const wrapLb = document.getElementById('lightbox-wrap');
+if (wrapLb) {
+  wrapLb.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      lbPinching = true;
+      lbLastDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    } else if (e.touches.length === 1 && lbScale > 1) {
+      lbDragging = true; lbLastX = e.touches[0].clientX; lbLastY = e.touches[0].clientY;
+    } else if (e.touches.length === 1) {
+      lbDragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+    }
+  }, { passive: true });
+
+  wrapLb.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 2 && lbPinching) {
+      const dist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      lbScale = Math.min(lbMaxScale, Math.max(lbMinScale, lbScale * (dist/lbLastDist)));
+      lbLastDist = dist; lbApply();
+    } else if (e.touches.length === 1 && lbDragging) {
+      lbDragX += e.touches[0].clientX - lbLastX; lbDragY += e.touches[0].clientY - lbLastY;
+      lbLastX = e.touches[0].clientX; lbLastY = e.touches[0].clientY; lbApply();
+    }
+  }, { passive: false });
+
+  wrapLb.addEventListener('touchend', e => {
+    if (lbPinching && e.touches.length < 2) {
+      lbPinching = false;
+      if (lbScale < 1.05) { lbScale=1; lbDragX=0; lbDragY=0; lbApply(); }
+    }
+    if (e.touches.length === 0) {
+      lbDragging = false;
+      if (lbDragStart && Date.now()-lbDragStart.t < 300) {
+        const dx = Math.abs(e.changedTouches[0].clientX-lbDragStart.x);
+        const dy = Math.abs(e.changedTouches[0].clientY-lbDragStart.y);
+        if (dx<10 && dy<10 && lbScale>1) { lbReset(); lbApply(); }
+      }
+      lbDragStart = null;
+    }
+  }, { passive: true });
+
+  wrapLb.addEventListener('wheel', e => {
+    e.preventDefault();
+    lbScale = Math.min(lbMaxScale, Math.max(lbMinScale, lbScale * (e.deltaY>0?0.85:1.15)));
+    if (lbScale<=1) { lbDragX=0; lbDragY=0; }
+    lbApply();
+  }, { passive: false });
+}
+
+/* ════ FIREBASE ════ */
+function initCatalogo() {
+  if (!FIREBASE_OK) {
+    document.getElementById('cat-wrap').innerHTML = '<div class="empty-cat">Firebase no configurado — funcionando en modo demo.</div>';
+    const dot = document.getElementById('online-dot');
+    dot.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#FF8C00;display:inline-block;margin-right:5px"></span>Modo local';
+    dot.style.background = '#FFF0D6'; dot.style.borderColor = '#FFD09A'; dot.style.color = '#8A4A00';
+    return;
+  }
+  const app = initializeApp(firebaseConfig);
+  db = getDatabase(app);
+
+  onValue(ref(db, 'lemonclub/productos'), snap => {
+    const val = snap.val();
+    productos = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
+    renderFilters();
+    renderProductos();
+  });
+
+  onValue(ref(db, 'lemonclub/pedidos'), snap => {
+    const val = snap.val();
+    pedidos = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
+    renderProductos();
+  });
+}
+</script>
+</body>
+</html>

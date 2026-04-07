@@ -112,6 +112,19 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   .cart-panel.open{transform:translate(-50%,0)}
   .sticky-order{left:50%;right:auto;width:460px;transform:translateX(-50%)}
 }
+
+/* LIGHTBOX */
+.lightbox{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.93);display:none;align-items:center;justify-content:center;flex-direction:column;overflow:hidden}
+.lightbox.open{display:flex}
+.lightbox-img-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:100vw;height:80vh;overflow:hidden;touch-action:none}
+.lightbox-img{max-width:95vw;max-height:78vh;object-fit:contain;border-radius:10px;user-select:none;transform-origin:center center;transition:transform .1s ease;will-change:transform}
+.lightbox-close{position:fixed;top:14px;right:14px;background:rgba(255,255,255,0.18);border:none;border-radius:50%;width:42px;height:42px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1001}
+.lightbox-info{position:fixed;bottom:20px;left:0;right:0;text-align:center;padding:0 20px;pointer-events:none}
+.lightbox-name{color:rgba(255,255,255,0.85);font-size:13px;font-family:'DM Sans',sans-serif}
+.lightbox-precio{color:#C8D400;font-family:'Playfair Display',serif;font-size:17px;margin-top:3px}
+.lightbox-hint{color:rgba(255,255,255,0.35);font-size:11px;margin-top:6px}
+.prod-img img{cursor:zoom-in}
+
 </style>
 </head>
 <body>
@@ -168,6 +181,20 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   </div>
 </div>
 
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightbox-close" onclick="cerrarLightboxBtn()">✕</button>
+  <div class="lightbox-img-wrap" id="lightbox-wrap">
+    <img class="lightbox-img" id="lightbox-img" src="" alt="" draggable="false">
+  </div>
+  <div class="lightbox-info">
+    <div class="lightbox-name" id="lightbox-name"></div>
+    <div class="lightbox-precio" id="lightbox-precio"></div>
+    <div class="lightbox-hint">Pellizca para hacer zoom</div>
+  </div>
+</div>
+
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -187,7 +214,7 @@ const firebaseConfig = {
 };
 
 /* Número de WhatsApp del negocio — incluir código de país sin + */
-const WHATSAPP_NUMBER = '584241215776';
+const WHATSAPP_NUMBER = '58XXXXXXXXXX';
 
 const FIREBASE_OK = !firebaseConfig.apiKey.startsWith('TU_');
 let db = null;
@@ -260,7 +287,7 @@ function cardHtml(p) {
   const agotado = !info.disponible;
   return `<div class="prod-card${agotado?' agotado':''}">
     <div class="prod-img">
-      ${p.foto ? `<img src="${p.foto}" alt="${p.nombre}" loading="lazy">` : `<div class="prod-img-placeholder">🍋</div>`}
+      ${p.foto ? `<img src="${p.foto}" alt="${p.nombre}" loading="lazy" onclick="abrirLightbox('${p.foto}','${p.nombre}',${p.precio||0})">` : `<div class="prod-img-placeholder">🍋</div>`}
       <span class="stock-badge ${info.clase}">${info.label}</span>
     </div>
     <div class="prod-info">
@@ -399,6 +426,115 @@ window.realizarPedido = function() {
 };
 
 /* Firebase init */
+
+/* ── LIGHTBOX CON PINCH ZOOM ── */
+let lbScale = 1, lbMinScale = 1, lbMaxScale = 5;
+let lbLastDist = 0, lbPinching = false;
+let lbDragX = 0, lbDragY = 0, lbLastX = 0, lbLastY = 0, lbDragging = false, lbDragStart = null;
+
+function lbReset() {
+  lbScale = 1; lbDragX = 0; lbDragY = 0;
+  const img = document.getElementById('lightbox-img');
+  if (img) img.style.transform = 'scale(1) translate(0,0)';
+}
+
+function lbApply() {
+  const img = document.getElementById('lightbox-img');
+  if (img) img.style.transform = `scale(${lbScale}) translate(${lbDragX/lbScale}px,${lbDragY/lbScale}px)`;
+}
+
+window.abrirLightbox = function(src, nombre, precio) {
+  lbReset();
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox-name').textContent = nombre;
+  document.getElementById('lightbox-precio').textContent = precio ? '$' + Number(precio).toFixed(2) : '';
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+window.cerrarLightboxBtn = function() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+  lbReset();
+};
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { cerrarLightboxBtn(); }
+});
+
+// Click backdrop to close (only if not pinching/dragging)
+document.getElementById('lightbox').addEventListener('click', function(e) {
+  if (e.target === this && lbScale === 1) cerrarLightboxBtn();
+});
+
+// ── Touch events for pinch zoom + drag ──
+const wrap = document.getElementById('lightbox-wrap');
+if (wrap) {
+  wrap.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      lbPinching = true;
+      lbLastDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    } else if (e.touches.length === 1 && lbScale > 1) {
+      lbDragging = true;
+      lbLastX = e.touches[0].clientX;
+      lbLastY = e.touches[0].clientY;
+    } else if (e.touches.length === 1) {
+      lbDragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+    }
+  }, { passive: true });
+
+  wrap.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 2 && lbPinching) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const delta = dist / lbLastDist;
+      lbScale = Math.min(lbMaxScale, Math.max(lbMinScale, lbScale * delta));
+      lbLastDist = dist;
+      lbApply();
+    } else if (e.touches.length === 1 && lbDragging) {
+      lbDragX += e.touches[0].clientX - lbLastX;
+      lbDragY += e.touches[0].clientY - lbLastY;
+      lbLastX = e.touches[0].clientX;
+      lbLastY = e.touches[0].clientY;
+      lbApply();
+    }
+  }, { passive: false });
+
+  wrap.addEventListener('touchend', e => {
+    if (lbPinching && e.touches.length < 2) {
+      lbPinching = false;
+      if (lbScale < 1.05) { lbScale = 1; lbDragX = 0; lbDragY = 0; lbApply(); }
+    }
+    if (e.touches.length === 0) {
+      lbDragging = false;
+      // double-tap to reset
+      if (lbDragStart && Date.now() - lbDragStart.t < 300) {
+        const dx = Math.abs(e.changedTouches[0].clientX - lbDragStart.x);
+        const dy = Math.abs(e.changedTouches[0].clientY - lbDragStart.y);
+        if (dx < 10 && dy < 10 && lbScale > 1) { lbReset(); lbApply(); }
+      }
+      lbDragStart = null;
+    }
+  }, { passive: true });
+}
+
+// Mouse wheel zoom (desktop)
+if (wrap) {
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.85 : 1.15;
+    lbScale = Math.min(lbMaxScale, Math.max(lbMinScale, lbScale * delta));
+    if (lbScale <= 1) { lbDragX = 0; lbDragY = 0; }
+    lbApply();
+  }, { passive: false });
+}
+
 function initCatalogo() {
   if (!FIREBASE_OK) {
     document.getElementById('cat-wrap').innerHTML = '<div class="empty-cat">Catálogo no disponible — Firebase no configurado.</div>';
