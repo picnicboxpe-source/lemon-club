@@ -582,34 +582,60 @@ function initCatalogo() {
 }
 
 function aplicarBranding(b) {
-  // Header
-  const hdr = document.querySelector('.cat-header');
-  if (hdr && b.headerBg) hdr.style.background = b.headerBg;
-  const logo = document.querySelector('.cat-logo');
-  if (logo) {
-    if (b.logoTexto) logo.childNodes[0] && (logo.childNodes[0].textContent = b.logoTexto + ' ');
-    if (b.logoColor) logo.style.color = b.logoColor;
+  if (!b) return;
+  // Body bg + image
+  if (b.bodyFoto) {
+    document.body.style.backgroundImage = `url(${b.bodyFoto})`;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundAttachment = 'fixed';
+    document.body.style.backgroundPosition = `${b.bodyFotoPosX||50}% ${b.bodyFotoPosY||50}%`;
+    const op = (b.bodyFotoOp||100)/100;
+    document.body.style.opacity = String(op);
+  } else if (b.bodyBg) {
+    document.body.style.backgroundImage = 'none';
+    document.body.style.background = b.bodyBg;
+    document.body.style.opacity = '1';
   }
-  // Banner
-  const banner = document.getElementById('cat-banner');
-  const bannerBg = document.getElementById('cat-banner-bg');
-  const bannerTit = document.getElementById('cat-banner-titulo');
-  const bannerSub = document.getElementById('cat-banner-subtitulo');
-  if (b.bannerActivo && banner) {
-    banner.style.display = 'block';
-    if (b.bannerBg1 && b.bannerBg2) bannerBg.style.background = `linear-gradient(135deg,${b.bannerBg1},${b.bannerBg2})`;
-    else if (b.bannerBg1) bannerBg.style.background = b.bannerBg1;
-    if (b.bannerTitulo) { bannerTit.textContent = b.bannerTitulo; bannerTit.style.color = b.bannerTextColor || '#2C1F0E'; }
-    if (b.bannerSubtitulo) { bannerSub.textContent = b.bannerSubtitulo; bannerSub.style.color = b.bannerTextColor || '#6B5440'; }
+  // Header = hero bg (banner area)
+  const hdr = document.querySelector('.cat-header');
+  if (hdr) {
+    const bg1 = b.bannerBg1 || '#F5EDD8';
+    const bg2 = b.bannerBg2 || '#E8D9BC';
+    hdr.style.background = `linear-gradient(135deg,${bg1},${bg2})`;
+    hdr.style.borderBottom = 'none';
     if (b.bannerFoto) {
-      bannerBg.style.backgroundImage = `url(${b.bannerFoto})`;
-      bannerBg.style.backgroundSize = 'cover';
-      bannerBg.style.backgroundPosition = 'center';
+      const op = (b.bannerOverlayOp||0)/100;
+      hdr.style.backgroundImage = `linear-gradient(rgba(0,0,0,${op}),rgba(0,0,0,${op})),url(${b.bannerFoto})`;
+      hdr.style.backgroundSize = 'cover';
+      hdr.style.backgroundPosition = `${b.bannerPosX||50}% ${b.bannerPosY||50}%`;
     }
   }
-  // Body bg
-  if (b.bodyBg) document.body.style.background = b.bodyBg;
-  // Accent color (botón sticky, carrito)
+  // Logo
+  const logoEl = document.querySelector('.cat-logo');
+  if (logoEl) {
+    if (b.logoFoto) {
+      logoEl.innerHTML = `<img src="${b.logoFoto}" style="height:${b.logoH||36}px;max-width:160px;object-fit:contain;vertical-align:middle">`;
+    } else {
+      logoEl.innerHTML = (b.logoTexto || 'Lemon Club 🍋');
+      logoEl.style.color = b.logoColor || '#4A5000';
+    }
+    if (b.logoX || b.logoY) {
+      logoEl.style.position = 'absolute';
+      logoEl.style.left = (b.logoX||16) + 'px';
+      logoEl.style.top = (b.logoY||10) + 'px';
+    }
+  }
+  // Banner text
+  const banner = document.getElementById('cat-banner');
+  const bannerTit = document.getElementById('cat-banner-titulo');
+  const bannerSub = document.getElementById('cat-banner-subtitulo');
+  if (banner && b.bannerActivo && (b.bannerTitulo || b.bannerSubtitulo)) {
+    banner.style.display = 'block';
+    banner.style.background = 'transparent';
+    if (b.bannerTitulo) { bannerTit.textContent = b.bannerTitulo; bannerTit.style.color = b.bannerTextColor || '#2C1F0E'; }
+    if (b.bannerSubtitulo) { bannerSub.textContent = b.bannerSubtitulo; bannerSub.style.color = b.bannerTextColor || '#6B5440'; }
+  }
+  // Accent
   if (b.accentColor) {
     document.querySelectorAll('.sticky-order-btn,.btn-realizar,.cart-btn').forEach(el => {
       el.style.background = b.accentColor;

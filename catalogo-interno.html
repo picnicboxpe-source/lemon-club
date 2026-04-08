@@ -8,8 +8,7 @@
 <style>
 :root{--lemon:#C8D400;--lemon-dark:#8A9200;--lemon-deep:#4A5000;--lime:#6DBE47;--lime-dark:#3D7A25;--orange:#FF8C00;--tangerine:#FF6B35;--cream:#FDFAF2;--beige:#F5EDD8;--beige-dark:#E8D9BC;--brown:#7B4F2E;--brown-light:#F2E8DC;--text:#2C1F0E;--text2:#6B5440;--text3:#9C8268;--white:#FFFFFF;--danger:#C0392B;--card-bg:#FFFEF7;--border:#DDD0B3;--border-light:#EEE4CA;--shadow:rgba(123,79,46,0.08)}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:var(--beige);color:var(--text);font-size:14px;min-height:100vh}
-body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 15% 20%,rgba(200,212,0,.10) 0%,transparent 40%),radial-gradient(circle at 85% 70%,rgba(255,140,0,.08) 0%,transparent 40%);pointer-events:none;z-index:0}
+body{font-family:'DM Sans',sans-serif;background:var(--beige);color:var(--text);font-size:14px;min-height:100vh;background-size:cover;background-attachment:fixed;background-position:center}
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;z-index:1}
 .login-card{background:var(--card-bg);border:1.5px solid var(--border);border-radius:28px;padding:32px;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 40px var(--shadow)}
 .login-logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--lemon-deep);margin-bottom:4px}
@@ -20,52 +19,84 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .pw-group input:focus{border-color:var(--lemon)}
 .btn-login{width:100%;padding:11px;border:none;border-radius:18px;background:linear-gradient(135deg,#C8D400,#A0B000);color:var(--lemon-deep);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif}
 .alert-err{background:#FDECEA;color:#C0392B;border:1px solid #F5C2BF;border-radius:12px;padding:8px 14px;font-size:12px;margin-bottom:12px}
-.app-header{position:sticky;top:0;z-index:60;background:var(--card-bg);border-bottom:1.5px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;box-shadow:0 2px 12px var(--shadow)}
-.app-logo{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;color:var(--lemon-deep);display:flex;align-items:center;gap:8px}
-.int-badge{background:#EDF0A0;color:var(--lemon-deep);border:1px solid #C0CE40;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:500}
+
+/* ── HEADER (unificado con banner) ── */
+.cat-hero{position:relative;overflow:hidden;min-height:80px}
+.cat-hero-bg{position:absolute;inset:0;z-index:0;background:var(--card-bg);background-size:cover;background-attachment:local;transition:background-position .1s}
+.cat-hero-content{position:relative;z-index:2;display:flex;flex-direction:column}
+.cat-topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;gap:8px;flex-wrap:wrap}
+
+/* LOGO area */
+.logo-area{position:relative;display:flex;align-items:center;gap:10px;cursor:default;user-select:none}
+.logo-img{height:40px;max-width:160px;object-fit:contain;display:none}
+.logo-text{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;color:var(--lemon-deep)}
+.logo-drag-hint{font-size:9px;color:rgba(255,255,255,.5);display:none;margin-top:2px;text-align:center}
+
+.int-badge{background:rgba(237,240,160,.9);color:var(--lemon-deep);border:1px solid #C0CE40;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:500}
 .header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.btn-sm-hdr{padding:6px 13px;border-radius:12px;font-size:12px;cursor:pointer;border:1.5px solid var(--border);background:var(--beige);color:var(--text);font-family:'DM Sans',sans-serif;transition:all .15s}
-.btn-branding{background:#EDF0A0;color:var(--lemon-deep);border-color:#C0CE40;font-weight:500}
+.btn-sm-hdr{padding:6px 13px;border-radius:12px;font-size:12px;cursor:pointer;border:1.5px solid var(--border);background:rgba(255,255,255,.8);color:var(--text);font-family:'DM Sans',sans-serif;transition:all .15s;backdrop-filter:blur(4px)}
+.btn-branding{background:rgba(237,240,160,.9);color:var(--lemon-deep);border-color:#C0CE40;font-weight:500}
 .btn-logout{font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:inherit}
+
+/* BANNER text area */
+.cat-banner-text{padding:12px 20px 20px;text-align:center;display:none}
+.cat-banner-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;margin-bottom:4px;line-height:1.2}
+.cat-banner-sub{font-size:13px;opacity:.85}
+
 /* BRANDING PANEL */
-.branding-panel{background:var(--card-bg);border-bottom:1.5px solid var(--border);padding:16px 16px 20px;display:none;position:relative;z-index:50}
+.branding-panel{background:var(--card-bg);border-bottom:1.5px solid var(--border);padding:16px 16px 20px;display:none;position:relative;z-index:50;max-height:85vh;overflow-y:auto}
 .branding-panel.open{display:block}
-.bp-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:500;color:var(--lemon-deep);margin-bottom:14px}
-.bp-note{font-size:11px;color:var(--text3);font-family:'DM Sans',sans-serif;font-weight:400;display:block;margin-top:2px}
-.bp-section{margin-bottom:18px}
-.bp-section-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:500;margin-bottom:8px;display:block}
+.bp-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:500;color:var(--lemon-deep);margin-bottom:4px}
+.bp-note{font-size:11px;color:var(--text3);display:block;margin-bottom:14px}
+.bp-section{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border-light)}
+.bp-section:last-of-type{border-bottom:none}
+.bp-section-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:500;margin-bottom:10px;display:block}
 .bp-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px}
 .bp-group{display:flex;flex-direction:column;gap:4px;min-width:90px}
 .bp-group label{font-size:11px;color:var(--text2)}
 .bp-input{padding:7px 10px;border-radius:12px;border:1.5px solid var(--border-light);background:var(--white);color:var(--text);font-size:12px;outline:none;font-family:'DM Sans',sans-serif;width:100%}
 .bp-input:focus{border-color:var(--lemon)}
 .bp-color{width:42px;height:36px;border-radius:10px;border:1.5px solid var(--border-light);cursor:pointer;padding:2px}
-.palette-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:6px}
-.palette-card{border:2px solid transparent;border-radius:14px;padding:10px 12px;cursor:pointer;transition:all .18s;background:var(--beige)}
+/* File upload widget */
+.bp-upload{display:flex;flex-direction:column;gap:6px}
+.bp-upload-tabs{display:flex;gap:5px}
+.bp-upload-tab{padding:4px 11px;border-radius:10px;font-size:11px;cursor:pointer;border:1.5px solid var(--border);background:var(--beige);color:var(--text2);font-family:'DM Sans',sans-serif;transition:all .15s}
+.bp-upload-tab.active{background:#EDF0A0;color:var(--lemon-deep);border-color:#C0CE40;font-weight:500}
+.bp-thumb{width:56px;height:56px;border-radius:10px;object-fit:cover;border:1.5px solid var(--border-light);display:none;margin-top:4px}
+.bp-thumb.show{display:block}
+.bp-drag-note{font-size:10px;color:var(--text3);margin-top:4px;display:flex;align-items:center;gap:4px}
+/* Palettes */
+.palette-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.palette-card{border:2px solid transparent;border-radius:14px;padding:9px 11px;cursor:pointer;transition:all .18s;background:var(--beige)}
 .palette-card:hover{border-color:var(--lemon)}
 .palette-card.selected{border-color:var(--lemon-dark);background:#F5F8C0}
-.palette-swatch{display:flex;gap:4px;margin-bottom:6px}
-.swatch{width:18px;height:18px;border-radius:5px;border:1px solid rgba(0,0,0,.08)}
+.palette-swatch{display:flex;gap:3px;margin-bottom:5px}
+.swatch{width:16px;height:16px;border-radius:5px;border:1px solid rgba(0,0,0,.08)}
 .palette-name{font-size:11px;font-weight:500;color:var(--text)}
 .palette-desc{font-size:10px;color:var(--text3);margin-top:1px}
-.bp-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding-bottom:4px}
+.bp-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:4px 0}
 .bp-toggle input[type=checkbox]{width:16px;height:16px;accent-color:var(--lemon-dark);cursor:pointer}
+/* Preview */
+.bp-preview{border-radius:14px;overflow:hidden;margin-top:10px;min-height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:16px;position:relative;background:var(--beige);background-size:cover;background-position:center}
+.bp-preview-inner{position:relative;z-index:1;text-align:center}
+/* Slider sliders */
+.bp-slider{width:100%;accent-color:var(--lemon-dark)}
 .btn-save-branding{background:linear-gradient(135deg,#C8D400,#A0B000);color:var(--lemon-deep);border:none;border-radius:14px;padding:9px 20px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif}
 .btn-alt-branding{background:var(--beige);color:var(--text2);border:1.5px solid var(--border);border-radius:14px;padding:9px 16px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif}
-.bp-preview{border-radius:14px;overflow:hidden;margin-top:8px;min-height:64px;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:16px;position:relative}
-.bp-preview-bg{position:absolute;inset:0;z-index:0}
-.bp-preview-content{position:relative;z-index:1;text-align:center}
-/* CAT FILTERS */
-.cat-filters{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;position:sticky;top:53px;z-index:40;background:var(--beige)}
+
+/* FILTERS */
+.cat-filters{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;background:var(--beige)}
 .cat-filters::-webkit-scrollbar{display:none}
 .cat-filter{padding:6px 14px;border-radius:16px;font-size:12px;cursor:pointer;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text2);white-space:nowrap;font-family:'DM Sans',sans-serif;transition:all .15s}
 .cat-filter.active{background:linear-gradient(135deg,#F0F5B0,#D8E060);color:var(--lemon-deep);border-color:#C0CE40;font-weight:500}
+
 /* GRID */
 .cat-wrap{position:relative;z-index:1;padding:0 12px 40px}
 .cat-section-title{font-family:'Playfair Display',serif;font-size:14px;color:var(--text3);padding:12px 4px 8px;letter-spacing:.5px}
 .prod-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:4px}
 @media(min-width:500px){.prod-grid{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:700px){.prod-grid{grid-template-columns:repeat(4,1fr)}}
+
 /* CARD */
 .prod-card{background:var(--card-bg);border:1.5px solid var(--border-light);border-radius:20px;overflow:hidden;transition:border-color .18s;position:relative}
 .prod-card:hover{border-color:var(--lemon)}
@@ -74,10 +105,8 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .prod-img img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
 .prod-img-placeholder{font-size:32px;opacity:.35}
 .stock-badge{position:absolute;top:8px;right:8px;font-size:10px;font-weight:500;padding:2px 8px;border-radius:10px;pointer-events:none}
-.badge-disp{background:#D8F0C0;color:#3D7A25}
-.badge-poco{background:#FFE8C8;color:#8A4A00}
-.badge-ultimas{background:#FDECEA;color:#C0392B}
-.badge-agotado{background:#EEE4CA;color:var(--text3)}
+.badge-disp{background:#D8F0C0;color:#3D7A25}.badge-poco{background:#FFE8C8;color:#8A4A00}
+.badge-ultimas{background:#FDECEA;color:#C0392B}.badge-agotado{background:#EEE4CA;color:var(--text3)}
 .prod-info{padding:10px}
 .prod-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px;line-height:1.3}
 .prod-cat{font-size:11px;color:var(--text3);margin-bottom:4px}
@@ -87,7 +116,6 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .btn-edit-card{position:absolute;bottom:10px;right:10px;background:var(--lemon-deep);color:#fff;border:none;border-radius:12px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;z-index:5;opacity:0;transition:opacity .18s}
 .prod-card:hover .btn-edit-card{opacity:1}
 @media(max-width:600px){.btn-edit-card{opacity:1}}
-/* EDIT OVERLAY */
 .edit-overlay{position:absolute;inset:0;background:rgba(245,237,216,.97);border-radius:18px;padding:12px;display:none;flex-direction:column;gap:8px;z-index:10;overflow-y:auto}
 .edit-overlay.show{display:flex}
 .edit-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:500;margin-bottom:2px}
@@ -99,6 +127,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .edit-btns{display:flex;gap:6px;margin-top:4px}
 .btn-save-edit{flex:1;background:linear-gradient(135deg,#C8D400,#A0B000);color:var(--lemon-deep);border:none;border-radius:12px;padding:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif}
 .btn-cancel-edit{background:var(--beige);color:var(--text2);border:1px solid var(--border);border-radius:12px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+
 /* LIGHTBOX */
 .lightbox{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.93);display:none;align-items:center;justify-content:center;flex-direction:column;overflow:hidden}
 .lightbox.open{display:flex}
@@ -109,6 +138,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .lightbox-name{color:rgba(255,255,255,.85);font-size:13px;font-family:'DM Sans',sans-serif}
 .lightbox-precio{color:#C8D400;font-family:'Playfair Display',serif;font-size:17px;margin-top:3px}
 .lightbox-hint{color:rgba(255,255,255,.35);font-size:11px;margin-top:6px}
+
 .empty-cat{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px}
 .loading{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--lemon-deep);color:#fff;border-radius:16px;padding:10px 20px;font-size:13px;z-index:200;transition:transform .3s ease;white-space:nowrap}
@@ -123,7 +153,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
     <div class="login-logo">Lemon Club 🍋</div>
     <div class="login-sub">catálogo interno</div>
     <div id="login-err" style="display:none" class="alert-err"></div>
-    <div class="pw-group"><label>Contraseña del equipo</label>
+    <div class="pw-group"><label>Contraseña</label>
       <input type="password" id="pw-input" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <button class="btn-login" onclick="doLogin()">Entrar</button>
@@ -131,30 +161,48 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 </div>
 
 <div id="app-screen" style="display:none">
-  <div class="app-header">
-    <div class="app-logo">Lemon Club 🍋 <span class="int-badge">Interno</span></div>
-    <div class="header-right">
-      <div id="online-dot" style="display:flex;align-items:center;gap:5px;font-size:11px;color:#3D7A25;background:#E8F5E0;border:1px solid #A8D98A;border-radius:16px;padding:3px 10px">
-        <span style="width:7px;height:7px;border-radius:50%;background:#6DBE47;animation:pulse 2s infinite;display:inline-block"></span>En línea
+
+  <!-- HERO UNIFICADO: header + banner -->
+  <div class="cat-hero" id="cat-hero">
+    <div class="cat-hero-bg" id="cat-hero-bg"></div>
+    <div class="cat-hero-content">
+      <div class="cat-topbar">
+        <!-- LOGO draggable -->
+        <div class="logo-area" id="logo-area">
+          <img class="logo-img" id="logo-img-el" src="" alt="logo">
+          <span class="logo-text" id="logo-text-el">Lemon Club 🍋</span>
+          <span class="int-badge">Interno</span>
+        </div>
+        <div class="header-right">
+          <div id="online-dot" style="display:flex;align-items:center;gap:5px;font-size:11px;color:#3D7A25;background:rgba(232,245,224,.9);border:1px solid #A8D98A;border-radius:16px;padding:3px 10px;backdrop-filter:blur(4px)">
+            <span style="width:7px;height:7px;border-radius:50%;background:#6DBE47;animation:pulse 2s infinite;display:inline-block"></span>En línea
+          </div>
+          <button class="btn-sm-hdr btn-branding" onclick="toggleBranding()">🎨 Diseño</button>
+          <button class="btn-logout" onclick="doLogout()">Salir</button>
+        </div>
       </div>
-      <button class="btn-sm-hdr btn-branding" onclick="toggleBranding()">🎨 Diseño</button>
-      <button class="btn-logout" onclick="doLogout()">Salir</button>
+      <!-- Banner text -->
+      <div class="cat-banner-text" id="cat-banner-text">
+        <div class="cat-banner-title" id="cat-banner-title-el"></div>
+        <div class="cat-banner-sub" id="cat-banner-sub-el"></div>
+      </div>
     </div>
   </div>
 
   <!-- BRANDING EDITOR -->
   <div class="branding-panel" id="branding-panel">
-    <div class="bp-title">🎨 Editor de diseño
-      <span class="bp-note">Los cambios se publican en tiempo real al catálogo de clientes</span>
-    </div>
+    <div class="bp-title">🎨 Editor de diseño del catálogo</div>
+    <span class="bp-note">Los cambios se publican en tiempo real al catálogo de clientes al presionar "Publicar"</span>
 
+    <!-- PALETAS -->
     <div class="bp-section">
-      <span class="bp-section-label">Paletas rápidas — elige una base</span>
+      <span class="bp-section-label">Paletas rápidas</span>
       <div class="palette-grid" id="palette-grid"></div>
     </div>
 
+    <!-- HERO / BANNER UNIFICADO -->
     <div class="bp-section">
-      <span class="bp-section-label">Banner principal</span>
+      <span class="bp-section-label">Banner principal (header + fondo)</span>
       <div class="bp-row">
         <div class="bp-group" style="flex:2;min-width:160px"><label>Título</label><input class="bp-input" id="bp-titulo" placeholder="Ej: Nueva Colección 🍋"></div>
         <div class="bp-group" style="flex:2;min-width:160px"><label>Subtítulo</label><input class="bp-input" id="bp-subtitulo" placeholder="Ej: Accesorios únicos para ti"></div>
@@ -162,32 +210,90 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
         <label class="bp-toggle"><input type="checkbox" id="bp-banner-activo" checked><span style="font-size:12px;color:var(--text2)">Mostrar banner</span></label>
       </div>
       <div class="bp-row">
-        <div class="bp-group"><label>Fondo 1</label><input type="color" class="bp-color" id="bp-banner-bg1" value="#F5EDD8"></div>
-        <div class="bp-group"><label>Fondo 2</label><input type="color" class="bp-color" id="bp-banner-bg2" value="#E8D9BC"></div>
-        <div class="bp-group" style="flex:3;min-width:180px"><label>Foto de fondo (URL opcional)</label><input class="bp-input" id="bp-banner-foto" placeholder="URL de imagen..."></div>
+        <div class="bp-group"><label>Color fondo 1</label><input type="color" class="bp-color" id="bp-banner-bg1" value="#F5EDD8"></div>
+        <div class="bp-group"><label>Color fondo 2</label><input type="color" class="bp-color" id="bp-banner-bg2" value="#E8D9BC"></div>
+        <div class="bp-group"><label>Opacidad overlay</label><input type="range" class="bp-slider" id="bp-overlay-op" min="0" max="80" value="0" style="width:90px"></div>
       </div>
-      <!-- Preview -->
+      <!-- Imagen del banner -->
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px">Imagen de fondo del banner</label>
+        <div class="bp-upload">
+          <div class="bp-upload-tabs">
+            <button class="bp-upload-tab active" id="bt-banner-url-tab" onclick="switchBpTab('banner','url')">🔗 URL</button>
+            <button class="bp-upload-tab" id="bt-banner-file-tab" onclick="switchBpTab('banner','file')">📁 Archivo</button>
+          </div>
+          <div id="bp-banner-url-panel"><input class="bp-input" id="bp-banner-foto" placeholder="https://... o Google Drive"></div>
+          <div id="bp-banner-file-panel" style="display:none">
+            <input type="file" accept="image/*" class="bp-input" id="bp-banner-file" onchange="onBpFile('banner',this)" style="padding:4px">
+          </div>
+          <img class="bp-thumb" id="bp-banner-thumb">
+          <div class="bp-drag-note">↔ Arrastra la imagen del banner para reposicionarla</div>
+        </div>
+      </div>
+      <!-- Preview del banner -->
       <div class="bp-preview" id="bp-preview">
-        <div class="bp-preview-bg" id="bp-preview-bg"></div>
-        <div class="bp-preview-content">
-          <div id="bp-prev-titulo" style="font-family:'Playfair Display',serif;font-size:18px;font-weight:600;margin-bottom:3px">Vista previa del banner</div>
-          <div id="bp-prev-sub" style="font-size:12px;opacity:.85">Subtítulo aquí</div>
+        <div class="bp-preview-inner">
+          <div id="bp-prev-titulo" style="font-family:'Playfair Display',serif;font-size:18px;font-weight:600;margin-bottom:3px;color:#2C1F0E">Vista previa</div>
+          <div id="bp-prev-sub" style="font-size:12px;opacity:.85;color:#2C1F0E">Subtítulo aquí</div>
         </div>
       </div>
     </div>
 
+    <!-- LOGO -->
     <div class="bp-section">
-      <span class="bp-section-label">Colores generales</span>
+      <span class="bp-section-label">Logo</span>
+      <div class="bp-row" style="margin-bottom:10px">
+        <div class="bp-group" style="flex:2;min-width:150px"><label>Texto del logo (si no hay imagen)</label><input class="bp-input" id="bp-logo-texto" placeholder="Lemon Club"></div>
+        <div class="bp-group"><label>Color texto logo</label><input type="color" class="bp-color" id="bp-logo-color" value="#4A5000"></div>
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px">Imagen del logo (PNG sin fondo recomendado)</label>
+        <div class="bp-upload">
+          <div class="bp-upload-tabs">
+            <button class="bp-upload-tab active" id="bt-logo-url-tab" onclick="switchBpTab('logo','url')">🔗 URL</button>
+            <button class="bp-upload-tab" id="bt-logo-file-tab" onclick="switchBpTab('logo','file')">📁 Archivo</button>
+          </div>
+          <div id="bp-logo-url-panel"><input class="bp-input" id="bp-logo-foto" placeholder="URL del logo PNG..."></div>
+          <div id="bp-logo-file-panel" style="display:none">
+            <input type="file" accept="image/*" class="bp-input" id="bp-logo-file" onchange="onBpFile('logo',this)" style="padding:4px">
+          </div>
+          <img class="bp-thumb" id="bp-logo-thumb">
+        </div>
+      </div>
       <div class="bp-row">
-        <div class="bp-group"><label>Fondo página</label><input type="color" class="bp-color" id="bp-body-bg" value="#F5EDD8"></div>
-        <div class="bp-group"><label>Fondo header</label><input type="color" class="bp-color" id="bp-header-bg" value="#FFFEF7"></div>
-        <div class="bp-group"><label>Color logo</label><input type="color" class="bp-color" id="bp-logo-color" value="#4A5000"></div>
+        <div class="bp-group"><label>Altura logo (px)</label><input class="bp-input" id="bp-logo-h" type="number" value="40" min="20" max="120" style="width:80px"></div>
+      </div>
+      <div class="bp-drag-note">↔ Doble clic sobre el logo en el header para arrastrarlo y reposicionarlo</div>
+    </div>
+
+    <!-- FONDO DE PÁGINA -->
+    <div class="bp-section">
+      <span class="bp-section-label">Fondo de página</span>
+      <div class="bp-row">
+        <div class="bp-group"><label>Color</label><input type="color" class="bp-color" id="bp-body-bg" value="#F5EDD8"></div>
         <div class="bp-group"><label>Color acento</label><input type="color" class="bp-color" id="bp-accent" value="#FF6B35"></div>
-        <div class="bp-group" style="flex:2;min-width:150px"><label>Nombre en logo</label><input class="bp-input" id="bp-logo-texto" placeholder="Lemon Club"></div>
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px">Imagen de fondo de página (opcional)</label>
+        <div class="bp-upload">
+          <div class="bp-upload-tabs">
+            <button class="bp-upload-tab active" id="bt-bg-url-tab" onclick="switchBpTab('bg','url')">🔗 URL</button>
+            <button class="bp-upload-tab" id="bt-bg-file-tab" onclick="switchBpTab('bg','file')">📁 Archivo</button>
+          </div>
+          <div id="bp-bg-url-panel"><input class="bp-input" id="bp-bg-foto" placeholder="URL de imagen de fondo..."></div>
+          <div id="bp-bg-file-panel" style="display:none">
+            <input type="file" accept="image/*" class="bp-input" id="bp-bg-file" onchange="onBpFile('bg',this)" style="padding:4px">
+          </div>
+          <img class="bp-thumb" id="bp-bg-thumb">
+          <div class="bp-drag-note">↔ Arrastra el fondo de página para reposicionarlo</div>
+        </div>
+      </div>
+      <div class="bp-row">
+        <div class="bp-group"><label>Opacidad imagen</label><input type="range" class="bp-slider" id="bp-bg-op" min="10" max="100" value="100" style="width:100px"></div>
       </div>
     </div>
 
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:4px">
       <button class="btn-save-branding" onclick="guardarBranding()">Publicar cambios ✓</button>
       <button class="btn-alt-branding" onclick="resetBranding()">Restablecer</button>
       <button class="btn-alt-branding" onclick="toggleBranding()">Cerrar</button>
@@ -222,36 +328,27 @@ const firebaseConfig = {
   messagingSenderId: "257292451659",
   appId:             "1:257292451659:web:16f0cf0bc9db44dca8f2ce"
 };
-const TEAM_PW = 'trabajo2026';
-const FIREBASE_OK = !firebaseConfig.apiKey.startsWith('TU_');
+const TEAM_PW='trabajo2026';
+const FIREBASE_OK=!firebaseConfig.apiKey.startsWith('TU_');
 let db=null, productos=[], pedidos=[], catActiva='Todos';
 
+/* ── ESTADO BRANDING ── */
+let bpState = {
+  bannerFotoB64:'', bannerFotoUrl:'', bannerPosX:50, bannerPosY:50,
+  bgFotoB64:'', bgFotoUrl:'', bgPosX:50, bgPosY:50, bgOp:100,
+  logoFotoB64:'', logoFotoUrl:'', logoX:16, logoY:10,
+};
+
 /* PALETAS */
-const PALETAS = [
-  { id:'citrus',     nombre:'Citrus',      desc:'Limonado & cálido',
-    sw:['#F5EDD8','#C8D400','#FF8C00','#4A5000'],
-    c:{ bodyBg:'#F5EDD8', headerBg:'#FFFEF7', logoColor:'#4A5000', accentColor:'#FF6B35', bannerBg1:'#F0F5B0', bannerBg2:'#D8E060', bannerTextColor:'#4A5000' }},
-  { id:'rosegold',   nombre:'Rose Gold',   desc:'Elegante & femenino',
-    sw:['#FDF0F0','#C4875A','#E8B4B8','#8B3A3A'],
-    c:{ bodyBg:'#FDF0F0', headerBg:'#FFF8F8', logoColor:'#8B3A3A', accentColor:'#C4875A', bannerBg1:'#F9D5D3', bannerBg2:'#E8B4B8', bannerTextColor:'#5C1F1F' }},
-  { id:'mint',       nombre:'Mint',        desc:'Fresco & suave',
-    sw:['#F0FAF5','#4CAF80','#A8E6CF','#2D6A4F'],
-    c:{ bodyBg:'#F0FAF5', headerBg:'#FAFFFE', logoColor:'#2D6A4F', accentColor:'#4CAF80', bannerBg1:'#D4F0E4', bannerBg2:'#A8E6CF', bannerTextColor:'#1B4332' }},
-  { id:'lavender',   nombre:'Lavanda',     desc:'Suave & romántico',
-    sw:['#F5F0FF','#9B7FD4','#D4B8E0','#5C3D8F'],
-    c:{ bodyBg:'#F5F0FF', headerBg:'#FDFAFF', logoColor:'#5C3D8F', accentColor:'#9B7FD4', bannerBg1:'#E8DAFF', bannerBg2:'#D4B8E0', bannerTextColor:'#3B1F6B' }},
-  { id:'terracotta', nombre:'Terracota',   desc:'Cálido & natural',
-    sw:['#FDF4EE','#C4622D','#E8A87C','#7A3B1E'],
-    c:{ bodyBg:'#FDF4EE', headerBg:'#FFFCF9', logoColor:'#7A3B1E', accentColor:'#C4622D', bannerBg1:'#F5D5C0', bannerBg2:'#E8A87C', bannerTextColor:'#4A1E0A' }},
-  { id:'ocean',      nombre:'Océano',      desc:'Azul & fresco',
-    sw:['#EEF6FF','#3A86C8','#90C4E8','#1A4A7A'],
-    c:{ bodyBg:'#EEF6FF', headerBg:'#F8FCFF', logoColor:'#1A4A7A', accentColor:'#3A86C8', bannerBg1:'#C8E4F8', bannerBg2:'#90C4E8', bannerTextColor:'#0D2C4E' }},
-  { id:'chocolate',  nombre:'Chocolate',   desc:'Sofisticado & cálido',
-    sw:['#FDF8F5','#6B3B2A','#D4956A','#3B1F12'],
-    c:{ bodyBg:'#FDF8F5', headerBg:'#FFFCFA', logoColor:'#3B1F12', accentColor:'#6B3B2A', bannerBg1:'#EDD5C4', bannerBg2:'#D4956A', bannerTextColor:'#2A1008' }},
-  { id:'midnight',   nombre:'Midnight',    desc:'Oscuro & lujoso',
-    sw:['#1A1A2E','#C8D400','#E8B86D','#F5F5DC'],
-    c:{ bodyBg:'#1A1A2E', headerBg:'#16213E', logoColor:'#C8D400', accentColor:'#C8D400', bannerBg1:'#0F3460', bannerBg2:'#16213E', bannerTextColor:'#F5F5DC' }},
+const PALETAS=[
+  {id:'citrus',nombre:'Citrus',desc:'Limonado & cálido',sw:['#F5EDD8','#C8D400','#FF8C00','#4A5000'],c:{bodyBg:'#F5EDD8',logoColor:'#4A5000',accentColor:'#FF6B35',bannerBg1:'#F0F5B0',bannerBg2:'#D8E060',bannerTextColor:'#4A5000'}},
+  {id:'rosegold',nombre:'Rose Gold',desc:'Elegante & femenino',sw:['#FDF0F0','#C4875A','#E8B4B8','#8B3A3A'],c:{bodyBg:'#FDF0F0',logoColor:'#8B3A3A',accentColor:'#C4875A',bannerBg1:'#F9D5D3',bannerBg2:'#E8B4B8',bannerTextColor:'#5C1F1F'}},
+  {id:'mint',nombre:'Mint',desc:'Fresco & suave',sw:['#F0FAF5','#4CAF80','#A8E6CF','#2D6A4F'],c:{bodyBg:'#F0FAF5',logoColor:'#2D6A4F',accentColor:'#4CAF80',bannerBg1:'#D4F0E4',bannerBg2:'#A8E6CF',bannerTextColor:'#1B4332'}},
+  {id:'lavender',nombre:'Lavanda',desc:'Suave & romántico',sw:['#F5F0FF','#9B7FD4','#D4B8E0','#5C3D8F'],c:{bodyBg:'#F5F0FF',logoColor:'#5C3D8F',accentColor:'#9B7FD4',bannerBg1:'#E8DAFF',bannerBg2:'#D4B8E0',bannerTextColor:'#3B1F6B'}},
+  {id:'terracotta',nombre:'Terracota',desc:'Cálido & natural',sw:['#FDF4EE','#C4622D','#E8A87C','#7A3B1E'],c:{bodyBg:'#FDF4EE',logoColor:'#7A3B1E',accentColor:'#C4622D',bannerBg1:'#F5D5C0',bannerBg2:'#E8A87C',bannerTextColor:'#4A1E0A'}},
+  {id:'ocean',nombre:'Océano',desc:'Azul & fresco',sw:['#EEF6FF','#3A86C8','#90C4E8','#1A4A7A'],c:{bodyBg:'#EEF6FF',logoColor:'#1A4A7A',accentColor:'#3A86C8',bannerBg1:'#C8E4F8',bannerBg2:'#90C4E8',bannerTextColor:'#0D2C4E'}},
+  {id:'chocolate',nombre:'Chocolate',desc:'Sofisticado & cálido',sw:['#FDF8F5','#6B3B2A','#D4956A','#3B1F12'],c:{bodyBg:'#FDF8F5',logoColor:'#3B1F12',accentColor:'#6B3B2A',bannerBg1:'#EDD5C4',bannerBg2:'#D4956A',bannerTextColor:'#2A1008'}},
+  {id:'midnight',nombre:'Midnight',desc:'Oscuro & lujoso',sw:['#1A1A2E','#C8D400','#E8B86D','#F5F5DC'],c:{bodyBg:'#1A1A2E',logoColor:'#C8D400',accentColor:'#C8D400',bannerBg1:'#0F3460',bannerBg2:'#16213E',bannerTextColor:'#F5F5DC'}},
 ];
 
 /* AUTH */
@@ -261,8 +358,8 @@ window.doLogin=function(){
   if(pw===TEAM_PW||pw==='lemon2026'){
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app-screen').style.display='block';
-    renderPaletas(); initCatalogo();
-  } else { err.textContent='Contraseña incorrecta.'; err.style.display='block'; }
+    renderPaletas(); initDragLogo(); initDragBg(); initDragBanner(); initCatalogo();
+  } else {err.textContent='Contraseña incorrecta.';err.style.display='block';}
 };
 window.doLogout=function(){
   document.getElementById('app-screen').style.display='none';
@@ -270,125 +367,337 @@ window.doLogout=function(){
   document.getElementById('pw-input').value='';
 };
 
-/* BRANDING */
-window.toggleBranding=function(){ document.getElementById('branding-panel').classList.toggle('open'); };
+/* BRANDING TOGGLE */
+window.toggleBranding=function(){document.getElementById('branding-panel').classList.toggle('open');};
 
+/* PALETAS */
 function renderPaletas(){
   document.getElementById('palette-grid').innerHTML=PALETAS.map(p=>`
     <div class="palette-card" id="pal_${p.id}" onclick="aplicarPaleta('${p.id}')">
       <div class="palette-swatch">${p.sw.map(s=>`<div class="swatch" style="background:${s}"></div>`).join('')}</div>
-      <div class="palette-name">${p.nombre}</div>
-      <div class="palette-desc">${p.desc}</div>
+      <div class="palette-name">${p.nombre}</div><div class="palette-desc">${p.desc}</div>
     </div>`).join('');
 }
-
 window.aplicarPaleta=function(id){
-  const p=PALETAS.find(x=>x.id===id); if(!p)return;
+  const p=PALETAS.find(x=>x.id===id);if(!p)return;
   document.querySelectorAll('.palette-card').forEach(c=>c.classList.remove('selected'));
   document.getElementById('pal_'+id)?.classList.add('selected');
   const c=p.c;
-  if(c.bodyBg)          setV('bp-body-bg',c.bodyBg);
-  if(c.headerBg)        setV('bp-header-bg',c.headerBg);
-  if(c.logoColor)       setV('bp-logo-color',c.logoColor);
-  if(c.accentColor)     setV('bp-accent',c.accentColor);
-  if(c.bannerBg1)       setV('bp-banner-bg1',c.bannerBg1);
-  if(c.bannerBg2)       setV('bp-banner-bg2',c.bannerBg2);
-  if(c.bannerTextColor) setV('bp-banner-text',c.bannerTextColor);
+  if(c.bodyBg)         setV('bp-body-bg',c.bodyBg);
+  if(c.logoColor)      setV('bp-logo-color',c.logoColor);
+  if(c.accentColor)    setV('bp-accent',c.accentColor);
+  if(c.bannerBg1)      setV('bp-banner-bg1',c.bannerBg1);
+  if(c.bannerBg2)      setV('bp-banner-bg2',c.bannerBg2);
+  if(c.bannerTextColor)setV('bp-banner-text',c.bannerTextColor);
   updatePreview();
 };
 
-function setV(id,v){ const el=document.getElementById(id); if(el) el.value=v; }
+/* FILE UPLOAD TABS */
+window.switchBpTab=function(area,tab){
+  const up=document.getElementById('bp-'+area+'-url-panel');
+  const fp=document.getElementById('bp-'+area+'-file-panel');
+  const ub=document.getElementById('bt-'+area+'-url-tab');
+  const fb=document.getElementById('bt-'+area+'-file-tab');
+  if(tab==='url'){up.style.display='block';fp.style.display='none';ub.classList.add('active');fb.classList.remove('active');}
+  else{up.style.display='none';fp.style.display='block';fb.classList.add('active');ub.classList.remove('active');}
+};
 
+window.onBpFile=function(area,input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const b64=e.target.result;
+    if(area==='banner'){bpState.bannerFotoB64=b64;bpState.bannerFotoUrl='';}
+    if(area==='logo')  {bpState.logoFotoB64=b64;bpState.logoFotoUrl='';}
+    if(area==='bg')    {bpState.bgFotoB64=b64;bpState.bgFotoUrl='';}
+    const thumb=document.getElementById('bp-'+area+'-thumb');
+    if(thumb){thumb.src=b64;thumb.classList.add('show');}
+    updatePreview(); applyBgImagen(); applyLogoImagen();
+  };
+  reader.readAsDataURL(file);
+};
+
+/* UTILS */
+function setV(id,v){const el=document.getElementById(id);if(el)el.value=v;}
+function getV(id,def=''){const el=document.getElementById(id);return el?el.value:def;}
+function normFoto(url){if(!url)return'';const m=url.match(/\/d\/([a-zA-Z0-9_-]+)/);if(m)return'https://drive.google.com/uc?export=view&id='+m[1];return url;}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+const fmt=n=>'$'+Number(n).toFixed(2);
+function stockInfo(c){if(c<=0)return{l:'Agotado',cl:'badge-agotado',ok:false};if(c<=2)return{l:'Últimas unidades',cl:'badge-ultimas',ok:true};if(c<=5)return{l:'Pocas unidades',cl:'badge-poco',ok:true};return{l:'Disponible',cl:'badge-disp',ok:true};}
+function stockReal(p){return Math.max(0,p.cantidad-pedidos.filter(x=>x.estado==='pendiente').flatMap(x=>x.items||[]).filter(it=>it.producto===p.nombre).reduce((a,it)=>a+it.cantidad,0));}
+function getCats(){return[...new Set(productos.map(p=>p.categoria))].sort();}
+function sortP(arr){return arr.slice().sort((a,b)=>{const sA=stockReal(a)<=0?1:0,sB=stockReal(b)<=0?1:0;if(sA!==sB)return sA-sB;return a.nombre.localeCompare(b.nombre,'es');});}
+
+/* PREVIEW UPDATE */
 function updatePreview(){
-  const bg1=document.getElementById('bp-banner-bg1').value;
-  const bg2=document.getElementById('bp-banner-bg2').value;
-  const tc =document.getElementById('bp-banner-text').value;
-  const foto=document.getElementById('bp-banner-foto').value.trim();
-  const tit=document.getElementById('bp-titulo').value||'Vista previa del banner';
-  const sub=document.getElementById('bp-subtitulo').value||'Subtítulo aquí';
-  const bg=document.getElementById('bp-preview-bg');
-  bg.style.background=`linear-gradient(135deg,${bg1},${bg2})`;
-  if(foto){bg.style.backgroundImage=`url(${foto})`;bg.style.backgroundSize='cover';bg.style.backgroundPosition='center';}
-  else bg.style.backgroundImage='none';
-  const t=document.getElementById('bp-prev-titulo'); t.textContent=tit; t.style.color=tc;
-  const s=document.getElementById('bp-prev-sub'); s.textContent=sub; s.style.color=tc;
+  const bg1=getV('bp-banner-bg1','#F5EDD8');
+  const bg2=getV('bp-banner-bg2','#E8D9BC');
+  const tc=getV('bp-banner-text','#2C1F0E');
+  const tit=getV('bp-titulo')||'Vista previa del banner';
+  const sub=getV('bp-subtitulo')||'Subtítulo aquí';
+  const op=parseInt(getV('bp-overlay-op','0'))/100;
+  const prev=document.getElementById('bp-preview');
+  const fotoSrc=bpState.bannerFotoB64||normFoto(getV('bp-banner-foto'));
+  prev.style.background=`linear-gradient(135deg,${bg1},${bg2})`;
+  if(fotoSrc){prev.style.backgroundImage=`linear-gradient(rgba(0,0,0,${op}),rgba(0,0,0,${op})),url(${fotoSrc})`;prev.style.backgroundSize='cover';prev.style.backgroundPosition=`${bpState.bannerPosX}% ${bpState.bannerPosY}%`;}
+  else prev.style.backgroundImage='none';
+  const t=document.getElementById('bp-prev-titulo');t.textContent=tit;t.style.color=tc;
+  const s=document.getElementById('bp-prev-sub');s.textContent=sub;s.style.color=tc;
+  // Apply to live hero
+  applyHeroBg();
 }
 
-['bp-banner-bg1','bp-banner-bg2','bp-banner-text','bp-titulo','bp-subtitulo','bp-banner-foto'].forEach(id=>{
-  document.getElementById(id)?.addEventListener('input',updatePreview);
+['bp-banner-bg1','bp-banner-bg2','bp-banner-text','bp-titulo','bp-subtitulo','bp-banner-foto','bp-overlay-op','bp-body-bg','bp-bg-foto','bp-bg-op','bp-logo-foto','bp-logo-color','bp-logo-texto','bp-logo-h'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('input',()=>{updatePreview();applyBgImagen();applyLogoImagen();});
 });
 
+/* APPLY HERO (banner) */
+function applyHeroBg(){
+  const bg1=getV('bp-banner-bg1','#F5EDD8');
+  const bg2=getV('bp-banner-bg2','#E8D9BC');
+  const tc=getV('bp-banner-text','#2C1F0E');
+  const op=parseInt(getV('bp-overlay-op','0'))/100;
+  const tit=getV('bp-titulo');
+  const sub=getV('bp-subtitulo');
+  const activo=document.getElementById('bp-banner-activo')?.checked;
+  const heroBg=document.getElementById('cat-hero-bg');
+  const bannerText=document.getElementById('cat-banner-text');
+  const fotoSrc=bpState.bannerFotoB64||normFoto(getV('bp-banner-foto'));
+  heroBg.style.background=`linear-gradient(135deg,${bg1},${bg2})`;
+  if(fotoSrc){heroBg.style.backgroundImage=`linear-gradient(rgba(0,0,0,${op}),rgba(0,0,0,${op})),url(${fotoSrc})`;heroBg.style.backgroundSize='cover';heroBg.style.backgroundPosition=`${bpState.bannerPosX}% ${bpState.bannerPosY}%`;}
+  else heroBg.style.backgroundImage='none';
+  bannerText.style.display=(activo&&(tit||sub))?'block':'none';
+  document.getElementById('cat-banner-title-el').textContent=tit;document.getElementById('cat-banner-title-el').style.color=tc;
+  document.getElementById('cat-banner-sub-el').textContent=sub;document.getElementById('cat-banner-sub-el').style.color=tc;
+}
+
+/* APPLY BG */
+function applyBgImagen(){
+  const color=getV('bp-body-bg','#F5EDD8');
+  const op=parseInt(getV('bp-bg-op','100'))/100;
+  const fotoSrc=bpState.bgFotoB64||normFoto(getV('bp-bg-foto'));
+  if(fotoSrc){
+    document.body.style.background=color;
+    document.body.style.backgroundImage=`url(${fotoSrc})`;
+    document.body.style.backgroundSize='cover';
+    document.body.style.backgroundAttachment='fixed';
+    document.body.style.backgroundPosition=`${bpState.bgPosX}% ${bpState.bgPosY}%`;
+    document.body.style.opacity=String(op);
+  } else {
+    document.body.style.background=color;
+    document.body.style.backgroundImage='none';
+    document.body.style.opacity='1';
+  }
+  const thumb=document.getElementById('bp-bg-thumb');
+  if(fotoSrc&&thumb){thumb.src=fotoSrc;thumb.classList.add('show');}
+}
+
+/* APPLY LOGO */
+function applyLogoImagen(){
+  const fotoSrc=bpState.logoFotoB64||normFoto(getV('bp-logo-foto'));
+  const h=parseInt(getV('bp-logo-h','40'));
+  const color=getV('bp-logo-color','#4A5000');
+  const texto=getV('bp-logo-texto','Lemon Club 🍋');
+  const imgEl=document.getElementById('logo-img-el');
+  const txtEl=document.getElementById('logo-text-el');
+  if(fotoSrc){imgEl.src=fotoSrc;imgEl.style.height=h+'px';imgEl.style.display='block';txtEl.style.display='none';}
+  else{imgEl.style.display='none';txtEl.style.display='';txtEl.textContent=texto||'Lemon Club 🍋';txtEl.style.color=color;}
+  const thumb=document.getElementById('bp-logo-thumb');
+  if(fotoSrc&&thumb){thumb.src=fotoSrc;thumb.classList.add('show');}
+}
+
+/* DRAG: BANNER image repositioning */
+function initDragBanner(){
+  const hero=document.getElementById('cat-hero');
+  let dragging=false,sx=0,sy=0,ox=0,oy=0;
+  hero.addEventListener('mousedown',e=>{
+    if(e.target.closest('.cat-topbar')||e.target.closest('.cat-banner-text'))return;
+    const fotoSrc=bpState.bannerFotoB64||normFoto(getV('bp-banner-foto'));
+    if(!fotoSrc)return;
+    dragging=true;sx=e.clientX;sy=e.clientY;ox=bpState.bannerPosX;oy=bpState.bannerPosY;
+    hero.style.cursor='grabbing';e.preventDefault();
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const dx=(e.clientX-sx)/3,dy=(e.clientY-sy)/3;
+    bpState.bannerPosX=Math.max(0,Math.min(100,ox-dx));
+    bpState.bannerPosY=Math.max(0,Math.min(100,oy-dy));
+    applyHeroBg();updatePreview();
+  });
+  window.addEventListener('mouseup',()=>{dragging=false;hero.style.cursor='';});
+  // Touch
+  hero.addEventListener('touchstart',e=>{
+    if(e.target.closest('.cat-topbar')||e.target.closest('.cat-banner-text'))return;
+    const fotoSrc=bpState.bannerFotoB64||normFoto(getV('bp-banner-foto'));
+    if(!fotoSrc||e.touches.length!==1)return;
+    dragging=true;sx=e.touches[0].clientX;sy=e.touches[0].clientY;ox=bpState.bannerPosX;oy=bpState.bannerPosY;
+  },{passive:true});
+  window.addEventListener('touchmove',e=>{
+    if(!dragging)return;
+    const dx=(e.touches[0].clientX-sx)/3,dy=(e.touches[0].clientY-sy)/3;
+    bpState.bannerPosX=Math.max(0,Math.min(100,ox-dx));
+    bpState.bannerPosY=Math.max(0,Math.min(100,oy-dy));
+    applyHeroBg();updatePreview();
+  },{passive:true});
+  window.addEventListener('touchend',()=>{dragging=false;});
+}
+
+/* DRAG: BG image repositioning */
+function initDragBg(){
+  let dragging=false,sx=0,sy=0,ox=0,oy=0,dblTimer=null;
+  document.body.addEventListener('dblclick',e=>{
+    if(e.target.closest('#app-screen>*:not(.cat-wrap)')||e.target.closest('.lightbox'))return;
+    const fotoSrc=bpState.bgFotoB64||normFoto(getV('bp-bg-foto'));
+    if(!fotoSrc)return;
+    dragging=!dragging;
+    document.body.style.cursor=dragging?'grab':'';
+    showToast(dragging?'Modo arrastre fondo activo — haz clic para mover':'Fondo reposicionado');
+  });
+  document.body.addEventListener('mousedown',e=>{
+    if(!dragging)return;
+    if(e.target.closest('button')||e.target.closest('input')||e.target.closest('select'))return;
+    sx=e.clientX;sy=e.clientY;ox=bpState.bgPosX;oy=bpState.bgPosY;
+    document.body.style.cursor='grabbing';e.preventDefault();
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!dragging||!sx)return;
+    const dx=(e.clientX-sx)/5,dy=(e.clientY-sy)/5;
+    bpState.bgPosX=Math.max(0,Math.min(100,ox-dx));
+    bpState.bgPosY=Math.max(0,Math.min(100,oy-dy));
+    applyBgImagen();
+  });
+  window.addEventListener('mouseup',()=>{if(dragging)document.body.style.cursor='grab';sx=0;});
+}
+
+/* DRAG: LOGO repositioning (double-click activates) */
+function initDragLogo(){
+  const logoArea=document.getElementById('logo-area');
+  let active=false,sx=0,sy=0,ox=16,oy=10;
+  logoArea.style.position='relative';
+  logoArea.addEventListener('dblclick',e=>{
+    active=!active;
+    logoArea.style.cursor=active?'grab':'';
+    logoArea.style.outline=active?'2px dashed var(--lemon)':'none';
+    showToast(active?'Arrastra el logo para moverlo — doble clic para fijar':'Logo fijado');
+    e.stopPropagation();
+  });
+  logoArea.addEventListener('mousedown',e=>{
+    if(!active)return;
+    sx=e.clientX;sy=e.clientY;
+    ox=bpState.logoX||16;oy=bpState.logoY||10;
+    logoArea.style.cursor='grabbing';e.preventDefault();
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!active||!sx)return;
+    bpState.logoX=Math.max(0,ox+(e.clientX-sx));
+    bpState.logoY=Math.max(0,oy+(e.clientY-sy));
+    logoArea.style.position='absolute';
+    logoArea.style.left=bpState.logoX+'px';
+    logoArea.style.top=bpState.logoY+'px';
+  });
+  window.addEventListener('mouseup',()=>{if(active)logoArea.style.cursor='grab';sx=0;});
+  // Touch
+  logoArea.addEventListener('touchstart',e=>{
+    if(!active||e.touches.length!==1)return;
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;ox=bpState.logoX||16;oy=bpState.logoY||10;
+  },{passive:true});
+  window.addEventListener('touchmove',e=>{
+    if(!active)return;
+    bpState.logoX=Math.max(0,ox+(e.touches[0].clientX-sx));
+    bpState.logoY=Math.max(0,oy+(e.touches[0].clientY-sy));
+    logoArea.style.position='absolute';logoArea.style.left=bpState.logoX+'px';logoArea.style.top=bpState.logoY+'px';
+  },{passive:true});
+  window.addEventListener('touchend',()=>{sx=0;});
+  // Long press on mobile = activate
+  let pressTimer;
+  logoArea.addEventListener('touchstart',()=>{pressTimer=setTimeout(()=>{active=!active;logoArea.style.outline=active?'2px dashed var(--lemon)':'none';showToast(active?'Arrastra el logo para moverlo':'Logo fijado');},600);},{passive:true});
+  logoArea.addEventListener('touchend',()=>clearTimeout(pressTimer),{passive:true});
+}
+
+/* GUARDAR BRANDING */
 window.guardarBranding=function(){
   const b={
-    logoTexto: document.getElementById('bp-logo-texto').value.trim()||'Lemon Club',
-    logoColor: document.getElementById('bp-logo-color').value,
-    headerBg:  document.getElementById('bp-header-bg').value,
-    bodyBg:    document.getElementById('bp-body-bg').value,
-    accentColor: document.getElementById('bp-accent').value,
-    bannerActivo: document.getElementById('bp-banner-activo').checked,
-    bannerTitulo: document.getElementById('bp-titulo').value.trim(),
-    bannerSubtitulo: document.getElementById('bp-subtitulo').value.trim(),
-    bannerBg1: document.getElementById('bp-banner-bg1').value,
-    bannerBg2: document.getElementById('bp-banner-bg2').value,
-    bannerTextColor: document.getElementById('bp-banner-text').value,
-    bannerFoto: document.getElementById('bp-banner-foto').value.trim(),
-    ts: Date.now(),
+    logoTexto:        getV('bp-logo-texto')||'Lemon Club 🍋',
+    logoColor:        getV('bp-logo-color','#4A5000'),
+    logoFoto:         bpState.logoFotoB64||normFoto(getV('bp-logo-foto')),
+    logoH:            parseInt(getV('bp-logo-h','40')),
+    logoX:            bpState.logoX||16,
+    logoY:            bpState.logoY||10,
+    headerBg:         getV('bp-banner-bg1','#F5EDD8'),
+    bodyBg:           getV('bp-body-bg','#F5EDD8'),
+    bodyFoto:         bpState.bgFotoB64||normFoto(getV('bp-bg-foto')),
+    bodyFotoPosX:     bpState.bgPosX||50,
+    bodyFotoPosY:     bpState.bgPosY||50,
+    bodyFotoOp:       parseInt(getV('bp-bg-op','100')),
+    accentColor:      getV('bp-accent','#FF6B35'),
+    bannerActivo:     document.getElementById('bp-banner-activo')?.checked,
+    bannerTitulo:     getV('bp-titulo'),
+    bannerSubtitulo:  getV('bp-subtitulo'),
+    bannerBg1:        getV('bp-banner-bg1','#F5EDD8'),
+    bannerBg2:        getV('bp-banner-bg2','#E8D9BC'),
+    bannerTextColor:  getV('bp-banner-text','#2C1F0E'),
+    bannerFoto:       bpState.bannerFotoB64||normFoto(getV('bp-banner-foto')),
+    bannerPosX:       bpState.bannerPosX||50,
+    bannerPosY:       bpState.bannerPosY||50,
+    bannerOverlayOp:  parseInt(getV('bp-overlay-op','0')),
+    ts:Date.now(),
   };
-  if(db){ set(ref(db,'lemonclub/branding'),b).then(()=>showToast('Diseño publicado ✓')).catch(()=>showToast('Error al guardar')); }
+  if(db){set(ref(db,'lemonclub/branding'),b).then(()=>showToast('Diseño publicado ✓')).catch(()=>showToast('Error al guardar'));}
   aplicarBrandingLocal(b);
 };
 
 window.resetBranding=function(){
   if(!confirm('¿Restablecer el diseño original?'))return;
   if(db) set(ref(db,'lemonclub/branding'),null);
-  ['bp-titulo','bp-subtitulo','bp-logo-texto','bp-banner-foto'].forEach(id=>setV(id,''));
-  setV('bp-body-bg','#F5EDD8'); setV('bp-header-bg','#FFFEF7'); setV('bp-logo-color','#4A5000');
-  setV('bp-accent','#FF6B35'); setV('bp-banner-bg1','#F5EDD8'); setV('bp-banner-bg2','#E8D9BC');
-  setV('bp-banner-text','#2C1F0E'); document.getElementById('bp-banner-activo').checked=true;
-  updatePreview(); showToast('Diseño restablecido');
+  bpState={bannerFotoB64:'',bannerFotoUrl:'',bannerPosX:50,bannerPosY:50,bgFotoB64:'',bgFotoUrl:'',bgPosX:50,bgPosY:50,bgOp:100,logoFotoB64:'',logoFotoUrl:'',logoX:16,logoY:10};
+  ['bp-titulo','bp-subtitulo','bp-logo-texto','bp-banner-foto','bp-logo-foto','bp-bg-foto'].forEach(id=>setV(id,''));
+  setV('bp-body-bg','#F5EDD8');setV('bp-logo-color','#4A5000');setV('bp-accent','#FF6B35');
+  setV('bp-banner-bg1','#F5EDD8');setV('bp-banner-bg2','#E8D9BC');setV('bp-banner-text','#2C1F0E');
+  setV('bp-overlay-op','0');setV('bp-bg-op','100');setV('bp-logo-h','40');
+  document.getElementById('bp-banner-activo').checked=true;
+  ['bp-banner-thumb','bp-logo-thumb','bp-bg-thumb'].forEach(id=>document.getElementById(id)?.classList.remove('show'));
+  updatePreview();applyBgImagen();applyLogoImagen();showToast('Diseño restablecido');
 };
 
 function aplicarBrandingLocal(b){
   if(!b)return;
-  if(b.bodyBg) document.body.style.background=b.bodyBg;
-  const hdr=document.querySelector('.app-header'); if(hdr&&b.headerBg) hdr.style.background=b.headerBg;
-  const logo=document.querySelector('.app-logo'); if(logo&&b.logoColor) logo.style.color=b.logoColor;
+  // Body bg
+  if(b.bodyFoto){document.body.style.backgroundImage=`url(${b.bodyFoto})`;document.body.style.backgroundSize='cover';document.body.style.backgroundAttachment='fixed';document.body.style.backgroundPosition=`${b.bodyFotoPosX||50}% ${b.bodyFotoPosY||50}%`;}
+  else if(b.bodyBg){document.body.style.backgroundImage='none';document.body.style.background=b.bodyBg;}
+  // Banner
+  applyHeroBg();
+  // Logo
+  const imgEl=document.getElementById('logo-img-el');const txtEl=document.getElementById('logo-text-el');
+  if(b.logoFoto){imgEl.src=b.logoFoto;imgEl.style.height=(b.logoH||40)+'px';imgEl.style.display='block';txtEl.style.display='none';}
+  else{imgEl.style.display='none';txtEl.style.display='';txtEl.textContent=b.logoTexto||'Lemon Club 🍋';txtEl.style.color=b.logoColor||'#4A5000';}
+  // Logo position
+  const logoArea=document.getElementById('logo-area');
+  if(b.logoX||b.logoY){logoArea.style.position='absolute';logoArea.style.left=(b.logoX||16)+'px';logoArea.style.top=(b.logoY||10)+'px';}
+  bpState.bannerPosX=b.bannerPosX||50;bpState.bannerPosY=b.bannerPosY||50;
+  bpState.bgPosX=b.bodyFotoPosX||50;bpState.bgPosY=b.bodyFotoPosY||50;
+  bpState.logoX=b.logoX||16;bpState.logoY=b.logoY||10;
+  if(b.bannerFoto){bpState.bannerFotoB64=b.bannerFoto;const th=document.getElementById('bp-banner-thumb');if(th){th.src=b.bannerFoto;th.classList.add('show');}}
+  if(b.bodyFoto){bpState.bgFotoB64=b.bodyFoto;const th=document.getElementById('bp-bg-thumb');if(th){th.src=b.bodyFoto;th.classList.add('show');}}
+  if(b.logoFoto){bpState.logoFotoB64=b.logoFoto;const th=document.getElementById('bp-logo-thumb');if(th){th.src=b.logoFoto;th.classList.add('show');}}
 }
 
-/* UTILS */
-const fmt=n=>'$'+Number(n).toFixed(2);
-function normFoto(url){ if(!url)return''; const m=url.match(/\/d\/([a-zA-Z0-9_-]+)/); if(m)return'https://drive.google.com/uc?export=view&id='+m[1]; return url; }
-function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
-function stockInfo(c){ if(c<=0)return{l:'Agotado',cl:'badge-agotado',ok:false}; if(c<=2)return{l:'Últimas unidades',cl:'badge-ultimas',ok:true}; if(c<=5)return{l:'Pocas unidades',cl:'badge-poco',ok:true}; return{l:'Disponible',cl:'badge-disp',ok:true}; }
-function stockReal(p){ return Math.max(0,p.cantidad-pedidos.filter(x=>x.estado==='pendiente').flatMap(x=>x.items||[]).filter(it=>it.producto===p.nombre).reduce((a,it)=>a+it.cantidad,0)); }
-function getCats(){ return[...new Set(productos.map(p=>p.categoria))].sort(); }
-function sortP(arr){ return arr.slice().sort((a,b)=>{ const sA=stockReal(a)<=0?1:0,sB=stockReal(b)<=0?1:0; if(sA!==sB)return sA-sB; return a.nombre.localeCompare(b.nombre,'es'); }); }
-
-/* RENDER */
-window.filtrarCat=function(cat,el){ catActiva=cat; document.querySelectorAll('.cat-filter').forEach(b=>b.classList.remove('active')); el.classList.add('active'); renderProductos(); };
-
-function renderFilters(){
-  const f=document.getElementById('cat-filters');
-  f.innerHTML='<button class="cat-filter'+(catActiva==='Todos'?' active':'')+'" onclick="filtrarCat(\'Todos\',this)">Todos</button>'+getCats().map(c=>`<button class="cat-filter${catActiva===c?' active':''}" onclick="filtrarCat('${c}',this)">${c}</button>`).join('');
-}
-
+/* RENDER PRODUCTOS */
+window.filtrarCat=function(cat,el){catActiva=cat;document.querySelectorAll('.cat-filter').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderProductos();};
+function renderFilters(){const f=document.getElementById('cat-filters');f.innerHTML='<button class="cat-filter'+(catActiva==='Todos'?' active':'')+'" onclick="filtrarCat(\'Todos\',this)">Todos</button>'+getCats().map(c=>`<button class="cat-filter${catActiva===c?' active':''}" onclick="filtrarCat('${c}',this)">${c}</button>`).join('');}
 function renderProductos(){
   const lista=catActiva==='Todos'?productos:productos.filter(p=>p.categoria===catActiva);
   const wrap=document.getElementById('cat-wrap');
   if(!lista.length){wrap.innerHTML='<div class="empty-cat">Sin productos</div>';return;}
-  if(catActiva==='Todos'){
-    wrap.innerHTML=getCats().map(cat=>{ const prods=sortP(productos.filter(p=>p.categoria===cat)); if(!prods.length)return''; return`<div class="cat-section-title">${cat}</div><div class="prod-grid">${prods.map(p=>cardHtml(p)).join('')}</div>`; }).join('');
-  } else { wrap.innerHTML=`<div class="prod-grid">${sortP(lista).map(p=>cardHtml(p)).join('')}</div>`; }
+  if(catActiva==='Todos'){wrap.innerHTML=getCats().map(cat=>{const prods=sortP(productos.filter(p=>p.categoria===cat));if(!prods.length)return'';return`<div class="cat-section-title">${cat}</div><div class="prod-grid">${prods.map(p=>cardHtml(p)).join('')}</div>`;}).join('');}
+  else{wrap.innerHTML=`<div class="prod-grid">${sortP(lista).map(p=>cardHtml(p)).join('')}</div>`;}
 }
-
 function cardHtml(p){
-  const s=stockReal(p), info=stockInfo(s), agot=!info.ok;
+  const s=stockReal(p),info=stockInfo(s),agot=!info.ok;
   return`<div class="prod-card${agot?' agotado':''}">
     <div class="prod-img">${p.foto?`<img src="${p.foto}" alt="${p.nombre}" loading="lazy" onclick="abrirLightbox('${p.foto}','${p.nombre}',${p.precio||0})">`:'<div class="prod-img-placeholder">🍋</div>'}
       <span class="stock-badge ${info.cl}">${info.l}</span></div>
     <div class="prod-info">
-      <div class="prod-name">${p.nombre}</div>
-      <div class="prod-cat">${p.categoria}</div>
+      <div class="prod-name">${p.nombre}</div><div class="prod-cat">${p.categoria}</div>
       <div class="prod-precio">${p.precio?fmt(p.precio):'<span style="font-family:DM Sans,sans-serif;font-size:12px;font-weight:400;color:var(--text3)">Sin precio</span>'}</div>
       <div class="prod-stock-info">Stock: <span>${s}</span> uds.</div>
     </div>
@@ -412,25 +721,24 @@ function cardHtml(p){
     </div>
   </div>`;
 }
-
-window.abrirEditar=function(id){ document.querySelectorAll('.edit-overlay').forEach(o=>o.classList.remove('show')); document.getElementById('edit_'+id)?.classList.add('show'); };
-window.cerrarEditar=function(id){ document.getElementById('edit_'+id)?.classList.remove('show'); };
+window.abrirEditar=function(id){document.querySelectorAll('.edit-overlay').forEach(o=>o.classList.remove('show'));document.getElementById('edit_'+id)?.classList.add('show');};
+window.cerrarEditar=function(id){document.getElementById('edit_'+id)?.classList.remove('show');};
 window.switchTab=function(id,tab){
   const uD=document.getElementById('efoto-url-'+id),fD=document.getElementById('efoto-file-'+id);
   const bU=document.getElementById('etab-url-'+id),bF=document.getElementById('etab-file-'+id);
   if(tab==='url'){uD.style.display='block';fD.style.display='none';bU.classList.add('active');bF.classList.remove('active');}
   else{uD.style.display='none';fD.style.display='block';bF.classList.add('active');bU.classList.remove('active');}
 };
-window.onEditFile=function(id,input){ const file=input.files[0]; if(!file)return; const r=new FileReader(); r.onload=e=>{input._b64=e.target.result;}; r.readAsDataURL(file); };
+window.onEditFile=function(id,input){const file=input.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{input._b64=e.target.result;};r.readAsDataURL(file);};
 window.guardarEditar=function(id){
-  const p=productos.find(x=>x.id===id); if(!p)return;
-  p.nombre  =document.getElementById('en_'+id)?.value.trim()||p.nombre;
-  p.precio  =parseFloat(document.getElementById('ep_'+id)?.value)||0;
+  const p=productos.find(x=>x.id===id);if(!p)return;
+  p.nombre=document.getElementById('en_'+id)?.value.trim()||p.nombre;
+  p.precio=parseFloat(document.getElementById('ep_'+id)?.value)||0;
   p.cantidad=parseInt(document.getElementById('es_'+id)?.value)||0;
   const fb64=document.getElementById('eff_'+id)?._b64||'';
   const furl=document.getElementById('efu_'+id)?.value.trim()||'';
   p.foto=fb64||normFoto(furl)||p.foto||'';
-  if(db) set(ref(db,'lemonclub/productos'),productos).then(()=>showToast('Guardado ✓')).catch(()=>showToast('Error'));
+  if(db)set(ref(db,'lemonclub/productos'),productos).then(()=>showToast('Guardado ✓')).catch(()=>showToast('Error'));
   renderProductos();
 };
 
@@ -453,24 +761,26 @@ if(wL){
 
 /* FIREBASE */
 function initCatalogo(){
-  if(!FIREBASE_OK){ document.getElementById('cat-wrap').innerHTML='<div class="empty-cat">Firebase no configurado.</div>'; return; }
-  const app=initializeApp(firebaseConfig); db=getDatabase(app);
+  if(!FIREBASE_OK){document.getElementById('cat-wrap').innerHTML='<div class="empty-cat">Firebase no configurado.</div>';return;}
+  const app=initializeApp(firebaseConfig);db=getDatabase(app);
   onValue(ref(db,'lemonclub/productos'),snap=>{const v=snap.val();productos=v?(Array.isArray(v)?v:Object.values(v)):[];renderFilters();renderProductos();});
   onValue(ref(db,'lemonclub/pedidos'),snap=>{const v=snap.val();pedidos=v?(Array.isArray(v)?v:Object.values(v)):[];renderProductos();});
   onValue(ref(db,'lemonclub/branding'),snap=>{
-    const b=snap.val(); if(!b)return;
+    const b=snap.val();if(!b)return;
     aplicarBrandingLocal(b);
-    if(b.logoTexto)       setV('bp-logo-texto',b.logoTexto);
-    if(b.logoColor)       setV('bp-logo-color',b.logoColor);
-    if(b.headerBg)        setV('bp-header-bg',b.headerBg);
-    if(b.bodyBg)          setV('bp-body-bg',b.bodyBg);
-    if(b.accentColor&&!b.accentColor.includes('gradient')) setV('bp-accent',b.accentColor);
-    if(b.bannerTitulo)    setV('bp-titulo',b.bannerTitulo);
-    if(b.bannerSubtitulo) setV('bp-subtitulo',b.bannerSubtitulo);
-    if(b.bannerBg1)       setV('bp-banner-bg1',b.bannerBg1);
-    if(b.bannerBg2)       setV('bp-banner-bg2',b.bannerBg2);
-    if(b.bannerTextColor) setV('bp-banner-text',b.bannerTextColor);
-    if(b.bannerFoto)      setV('bp-banner-foto',b.bannerFoto);
+    // Populate form
+    if(b.logoTexto)        setV('bp-logo-texto',b.logoTexto);
+    if(b.logoColor)        setV('bp-logo-color',b.logoColor);
+    if(b.logoH)            setV('bp-logo-h',b.logoH);
+    if(b.bodyBg)           setV('bp-body-bg',b.bodyBg);
+    if(b.accentColor)      setV('bp-accent',b.accentColor);
+    if(b.bannerBg1)        setV('bp-banner-bg1',b.bannerBg1);
+    if(b.bannerBg2)        setV('bp-banner-bg2',b.bannerBg2);
+    if(b.bannerTextColor)  setV('bp-banner-text',b.bannerTextColor);
+    if(b.bannerTitulo)     setV('bp-titulo',b.bannerTitulo);
+    if(b.bannerSubtitulo)  setV('bp-subtitulo',b.bannerSubtitulo);
+    if(b.bannerOverlayOp!==undefined) setV('bp-overlay-op',b.bannerOverlayOp);
+    if(b.bodyFotoOp!==undefined) setV('bp-bg-op',b.bodyFotoOp);
     if(b.bannerActivo!==undefined) document.getElementById('bp-banner-activo').checked=b.bannerActivo;
     updatePreview();
   });
