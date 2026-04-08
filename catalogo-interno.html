@@ -323,13 +323,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey:            "AIzaSyCcf8QZM6T6fb5tHvIQx86Ine045Dr6tLM",
-  authDomain:        "lemonclubapp.firebaseapp.com",
-  databaseURL:       "https://lemonclubapp-default-rtdb.firebaseio.com",
-  projectId:         "lemonclubapp",
-  storageBucket:     "lemonclubapp.firebasestorage.app",
-  messagingSenderId: "257292451659",
-  appId:             "1:257292451659:web:16f0cf0bc9db44dca8f2ce"
+  apiKey:"TU_API_KEY", authDomain:"TU_PROYECTO.firebaseapp.com",
+  databaseURL:"https://TU_PROYECTO-default-rtdb.firebaseio.com",
+  projectId:"TU_PROYECTO", storageBucket:"TU_PROYECTO.appspot.com",
+  messagingSenderId:"TU_SENDER_ID", appId:"TU_APP_ID"
 };
 const TEAM_PW='trabajo2026';
 const FIREBASE_OK=!firebaseConfig.apiKey.startsWith('TU_');
@@ -765,6 +762,13 @@ window.quitarImg=function(area){
   showToast('Imagen eliminada — recuerda publicar');
 };
 
+function renderProductos(){
+  const lista=productos.filter(p=>p.categoria===catActiva);
+  const wrap=document.getElementById('cat-wrap');
+  if(!lista.length){wrap.innerHTML='<div class="empty-cat">Sin productos</div>';return;}
+  wrap.innerHTML=`<div class="prod-grid">${sortP(lista).map(p=>cardHtml(p)).join('')}</div>`;
+}
+
 /* FIREBASE */
 function initCatalogo(){
   if(!FIREBASE_OK){document.getElementById('cat-wrap').innerHTML='<div class="empty-cat">Firebase no configurado.</div>';return;}
@@ -794,12 +798,7 @@ function initCatalogo(){
 initCatalogo();
 </script>
 </body>
-</html>function renderProductos(){
-  const lista=catActiva===''?[]:productos.filter(p=>p.categoria===catActiva);
-  const wrap=document.getElementById('cat-wrap');
-  if(!lista.length){wrap.innerHTML='<div class="empty-cat">Sin productos</div>';return;}
-  wrap.innerHTML=`<div class="prod-grid">${sortP(lista).map(p=>cardHtml(p)).join('')}</div>`;
-}!DOCTYPE html>
+</html>!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
