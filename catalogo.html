@@ -23,14 +23,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--beige);color:var(--text);
 body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 15% 20%,rgba(200,212,0,0.10) 0%,transparent 40%),radial-gradient(circle at 85% 70%,rgba(255,140,0,0.08) 0%,transparent 40%);pointer-events:none;z-index:0}
 
 /* HEADER */
-.cat-header{position:sticky;top:0;z-index:50;background:var(--card-bg);border-bottom:1.5px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px var(--shadow)}
+.cat-hero{position:sticky;top:0;z-index:50}
 .cat-logo{font-family:'Playfair Display',serif;font-size:18px;font-weight:600;color:var(--lemon-deep)}
 .cart-btn{position:relative;background:linear-gradient(135deg,var(--orange),var(--tangerine));color:#fff;border:none;border-radius:20px;padding:8px 16px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;display:flex;align-items:center;gap:6px}
 .cart-count{background:#fff;color:var(--orange);border-radius:50%;width:18px;height:18px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;display:none}
 .cart-count.show{display:flex}
 
 /* FILTER TABS */
-.cat-filters{display:flex;gap:6px;padding:12px 16px;overflow-x:auto;scrollbar-width:none;position:sticky;top:57px;z-index:40;background:var(--beige)}
+.cat-filters{display:flex;gap:6px;padding:12px 16px;overflow-x:auto;scrollbar-width:none;position:sticky;top:0px;z-index:40;background:var(--beige)}
 .cat-filters::-webkit-scrollbar{display:none}
 .cat-filter{padding:6px 14px;border-radius:16px;font-size:12px;cursor:pointer;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text2);white-space:nowrap;font-family:'DM Sans',sans-serif;transition:all .15s}
 .cat-filter.active{background:linear-gradient(135deg,#F0F5B0,#D8E060);color:var(--lemon-deep);border-color:#C0CE40;font-weight:500}
@@ -129,25 +129,28 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 </head>
 <body>
 
-<div class="cat-header">
-  <div class="cat-logo">Lemon Club 🍋</div>
-  <button class="cart-btn" onclick="toggleCart()">
-    <span>🛒 Mi pedido</span>
-    <span class="cart-count" id="cart-count">0</span>
-  </button>
-</div>
-
-<!-- Branding Banner (read from Firebase) -->
-<div id="cat-banner" style="display:none;padding:16px 20px;text-align:center;position:relative;overflow:hidden">
-  <div id="cat-banner-bg" style="position:absolute;inset:0;z-index:0"></div>
-  <div style="position:relative;z-index:1">
-    <div id="cat-banner-titulo" style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;margin-bottom:4px"></div>
-    <div id="cat-banner-subtitulo" style="font-size:13px;opacity:.85"></div>
+<!-- HERO UNIFICADO: header + banner -->
+<div id="cat-hero" style="position:relative;overflow:hidden;background:var(--card-bg);box-shadow:0 2px 12px var(--shadow)">
+  <div id="cat-hero-bg" style="position:absolute;inset:0;z-index:0;background:var(--card-bg);background-size:cover;background-position:50% 50%;transition:background-position .1s"></div>
+  <div style="position:relative;z-index:2">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;gap:8px;flex-wrap:nowrap">
+      <div id="cat-logo-area" style="position:relative">
+        <img id="cat-logo-img" src="" alt="logo" style="display:none;height:36px;max-width:160px;object-fit:contain;vertical-align:middle">
+        <span class="cat-logo" id="cat-logo-txt">Lemon Club 🍋</span>
+      </div>
+      <button class="cart-btn" onclick="toggleCart()">
+        <span>🛒 Mi pedido</span>
+        <span class="cart-count" id="cart-count">0</span>
+      </button>
+    </div>
+    <div id="cat-banner-text" style="display:none;padding:10px 20px 20px;text-align:center">
+      <div id="cat-banner-titulo" style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;margin-bottom:4px"></div>
+      <div id="cat-banner-subtitulo" style="font-size:13px;opacity:.85"></div>
+    </div>
   </div>
 </div>
 
 <div class="cat-filters" id="cat-filters">
-  <button class="cat-filter active" onclick="filtrarCat('Todos',this)">Todos</button>
 </div>
 
 <div class="cat-wrap" id="cat-wrap">
@@ -230,7 +233,7 @@ let db = null;
 let productos = [];
 let pedidos   = [];
 let carrito   = {}; // { nombre: cantidad }
-let catActiva = 'Todos';
+let catActiva = '';
 
 function fmt(n){ return '$' + Number(n).toFixed(2); }
 function today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -259,8 +262,8 @@ function getCategorias() {
 function renderFilters() {
   const cats = getCategorias();
   const f = document.getElementById('cat-filters');
-  f.innerHTML = '<button class="cat-filter'+(catActiva==='Todos'?' active':'')+'" onclick="filtrarCat(\'Todos\',this)">Todos</button>' +
-    cats.map(c => `<button class="cat-filter${catActiva===c?' active':''}" onclick="filtrarCat('${c}',this)">${c}</button>`).join('');
+  if (!cats.includes(catActiva)) catActiva = cats[0] || '';
+  f.innerHTML = cats.map(cat => `<button class="cat-filter${catActiva===cat?' active':''}" onclick="filtrarCat('${cat}',this)">${cat}</button>`).join('');
 }
 
 window.filtrarCat = function(cat, el) {
@@ -282,21 +285,10 @@ function sortProductos(arr) {
 }
 
 function renderProductos() {
-  const lista = catActiva === 'Todos' ? productos : productos.filter(p => p.categoria === catActiva);
+  const lista = productos.filter(p => p.categoria === catActiva);
   const wrap = document.getElementById('cat-wrap');
   if (!lista.length) { wrap.innerHTML = '<div class="empty-cat">Sin productos en esta categoría</div>'; return; }
-
-  if (catActiva === 'Todos') {
-    const cats = getCategorias();
-    wrap.innerHTML = cats.map(cat => {
-      const prods = sortProductos(productos.filter(p => p.categoria === cat));
-      if (!prods.length) return '';
-      return `<div class="cat-section-title">${cat}</div>
-        <div class="prod-grid">${prods.map(p => cardHtml(p)).join('')}</div>`;
-    }).join('');
-  } else {
-    wrap.innerHTML = `<div class="prod-grid">${sortProductos(lista).map(p => cardHtml(p)).join('')}</div>`;
-  }
+  wrap.innerHTML = `<div class="prod-grid">${sortProductos(lista).map(p => cardHtml(p)).join('')}</div>`;
 }
 
 function cardHtml(p) {
@@ -583,59 +575,63 @@ function initCatalogo() {
 
 function aplicarBranding(b) {
   if (!b) return;
-  // Body bg + image
+  // ── Body bg ──
   if (b.bodyFoto) {
     document.body.style.backgroundImage = `url(${b.bodyFoto})`;
     document.body.style.backgroundSize = 'cover';
     document.body.style.backgroundAttachment = 'fixed';
     document.body.style.backgroundPosition = `${b.bodyFotoPosX||50}% ${b.bodyFotoPosY||50}%`;
-    const op = (b.bodyFotoOp||100)/100;
-    document.body.style.opacity = String(op);
   } else if (b.bodyBg) {
     document.body.style.backgroundImage = 'none';
     document.body.style.background = b.bodyBg;
-    document.body.style.opacity = '1';
   }
-  // Header = hero bg (banner area)
-  const hdr = document.querySelector('.cat-header');
-  if (hdr) {
-    const bg1 = b.bannerBg1 || '#F5EDD8';
-    const bg2 = b.bannerBg2 || '#E8D9BC';
-    hdr.style.background = `linear-gradient(135deg,${bg1},${bg2})`;
-    hdr.style.borderBottom = 'none';
+  // ── Hero (unified header+banner) ──
+  const heroBg = document.getElementById('cat-hero-bg');
+  if (heroBg) {
+    const bg1 = b.bannerBg1 || '#FFFEF7';
+    const bg2 = b.bannerBg2 || '#F5EDD8';
+    heroBg.style.background = `linear-gradient(135deg,${bg1},${bg2})`;
     if (b.bannerFoto) {
       const op = (b.bannerOverlayOp||0)/100;
-      hdr.style.backgroundImage = `linear-gradient(rgba(0,0,0,${op}),rgba(0,0,0,${op})),url(${b.bannerFoto})`;
-      hdr.style.backgroundSize = 'cover';
-      hdr.style.backgroundPosition = `${b.bannerPosX||50}% ${b.bannerPosY||50}%`;
-    }
-  }
-  // Logo
-  const logoEl = document.querySelector('.cat-logo');
-  if (logoEl) {
-    if (b.logoFoto) {
-      logoEl.innerHTML = `<img src="${b.logoFoto}" style="height:${b.logoH||36}px;max-width:160px;object-fit:contain;vertical-align:middle">`;
+      heroBg.style.backgroundImage = `linear-gradient(rgba(0,0,0,${op}),rgba(0,0,0,${op})),url(${b.bannerFoto})`;
+      heroBg.style.backgroundSize = 'cover';
+      heroBg.style.backgroundPosition = `${b.bannerPosX||50}% ${b.bannerPosY||50}%`;
     } else {
-      logoEl.innerHTML = (b.logoTexto || 'Lemon Club 🍋');
-      logoEl.style.color = b.logoColor || '#4A5000';
-    }
-    if (b.logoX || b.logoY) {
-      logoEl.style.position = 'absolute';
-      logoEl.style.left = (b.logoX||16) + 'px';
-      logoEl.style.top = (b.logoY||10) + 'px';
+      heroBg.style.backgroundImage = 'none';
     }
   }
-  // Banner text
-  const banner = document.getElementById('cat-banner');
-  const bannerTit = document.getElementById('cat-banner-titulo');
-  const bannerSub = document.getElementById('cat-banner-subtitulo');
-  if (banner && b.bannerActivo && (b.bannerTitulo || b.bannerSubtitulo)) {
-    banner.style.display = 'block';
-    banner.style.background = 'transparent';
-    if (b.bannerTitulo) { bannerTit.textContent = b.bannerTitulo; bannerTit.style.color = b.bannerTextColor || '#2C1F0E'; }
-    if (b.bannerSubtitulo) { bannerSub.textContent = b.bannerSubtitulo; bannerSub.style.color = b.bannerTextColor || '#6B5440'; }
+  // ── Logo ──
+  const logoImg = document.getElementById('cat-logo-img');
+  const logoTxt = document.getElementById('cat-logo-txt');
+  const logoArea = document.getElementById('cat-logo-area');
+  if (b.logoFoto) {
+    logoImg.src = b.logoFoto;
+    logoImg.style.height = (b.logoH||36) + 'px';
+    logoImg.style.display = 'inline-block';
+    if (logoTxt) logoTxt.style.display = 'none';
+  } else {
+    if (logoImg) logoImg.style.display = 'none';
+    if (logoTxt) {
+      logoTxt.style.display = '';
+      logoTxt.textContent = b.logoTexto || 'Lemon Club 🍋';
+      logoTxt.style.color = b.logoColor || '#4A5000';
+    }
   }
-  // Accent
+  if (logoArea && (b.logoX || b.logoY)) {
+    logoArea.style.position = 'absolute';
+    logoArea.style.left = (b.logoX||16) + 'px';
+    logoArea.style.top = (b.logoY||10) + 'px';
+  }
+  // ── Banner text ──
+  const bannerText = document.getElementById('cat-banner-text');
+  const titEl = document.getElementById('cat-banner-titulo');
+  const subEl = document.getElementById('cat-banner-subtitulo');
+  if (bannerText && b.bannerActivo && (b.bannerTitulo || b.bannerSubtitulo)) {
+    bannerText.style.display = 'block';
+    if (titEl) { titEl.textContent = b.bannerTitulo||''; titEl.style.color = b.bannerTextColor||'#2C1F0E'; }
+    if (subEl) { subEl.textContent = b.bannerSubtitulo||''; subEl.style.color = b.bannerTextColor||'#6B5440'; }
+  }
+  // ── Accent ──
   if (b.accentColor) {
     document.querySelectorAll('.sticky-order-btn,.btn-realizar,.cart-btn').forEach(el => {
       el.style.background = b.accentColor;
