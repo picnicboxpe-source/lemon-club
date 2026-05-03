@@ -1369,20 +1369,20 @@ window.verHistorialCierres = async function() {
   }
 };
 
-// ── RUTA DE REPARTO INTELIGENTE ──
+// ── RUTA DE REPARTO ──
 window.verRuta = function() {
-  const ORIGEN_STR = 'Av. General Mendiburu 935, Miraflores, Lima';
-  const ORIGEN_ENC = encodeURIComponent(ORIGEN_STR);
-  const MAX_PER_ROUTE = 5;
+  // Punto de partida — NO se incluye como waypoint, solo como origen
+  const ORIGEN = encodeURIComponent('Av. General Mendiburu 935, Miraflores, Lima');
+  const MAX_PARADAS = 9; // Google Maps allows max 10 waypoints including origin
+
   const today = dayKey(new Date());
 
-  // 1. Filter: not delivered, not closed, has address, date = today, NOT recojo
+  // Filter: pending, not closed, has address, delivery date = today
   const candidatos = orders.filter(o => {
     if (o.status === 'entregado') return false;
     if (o.cerrado) return false;
     if (!o.address || !o.address.trim()) return false;
     if (!o.deliveryDate) return false;
-    if (o.deliveryType === 'recojo') return false;  // exclude pickups
     const fecha = typeof o.deliveryDate === 'string'
       ? o.deliveryDate.slice(0, 10)
       : dayKey(new Date(o.deliveryDate.toDate ? o.deliveryDate.toDate() : o.deliveryDate));
@@ -1390,87 +1390,29 @@ window.verRuta = function() {
   });
 
   if (candidatos.length === 0) {
-    showToast('No hay envíos de hoy pendientes con dirección');
+    showToast('No hay pedidos de hoy pendientes con dirección registrada');
     return;
   }
 
-  // 2. Group by routeZone, then split into routes of max MAX_PER_ROUTE
-  const byZone = {};
-  candidatos.forEach(o => {
-    const z = o.routeZone || 'Sin zona';
-    if (!byZone[z]) byZone[z] = [];
-    byZone[z].push(o);
-  });
-
-  // Build routes: each zone fills routes of up to MAX_PER_ROUTE
-  const routes = [];
-  for (const [zone, list] of Object.entries(byZone)) {
-    for (let i = 0; i < list.length; i += MAX_PER_ROUTE) {
-      routes.push({
-        name: 'Ruta ' + String.fromCharCode(65 + routes.length), // A, B, C...
-        zone,
-        orders: list.slice(i, i + MAX_PER_ROUTE)
-      });
-    }
+  const paradas = candidatos.slice(0, MAX_PARADAS);
+  if (candidatos.length > MAX_PARADAS) {
+    showToast('Mostrando ' + MAX_PARADAS + ' de ' + candidatos.length + ' pedidos');
   }
 
-  // 3. For each route build Google Maps URL and open
-  if (routes.length === 1) {
-    // Single route — open directly
-    const wps = routes[0].orders.map(o => encodeURIComponent(o.address.trim()));
-    const url = 'https://www.google.com/maps/dir/' + ORIGEN_ENC + '/' + wps.join('/');
-    window.open(url, '_blank');
-    showToast(routes[0].name + ' — ' + routes[0].orders.length + ' paradas');
+  // Build Google Maps URL: origin/waypoint1/waypoint2/.../destination
+  // Destination = last stop (or origin if only 1 stop)
+  const waypoints = paradas.map(o => encodeURIComponent(o.address.trim()));
+
+  let url;
+  if (waypoints.length === 1) {
+    // origin → single destination
+    url = 'https://www.google.com/maps/dir/' + ORIGEN + '/' + waypoints[0];
   } else {
-    // Multiple routes — show a mini picker
-    const existing = document.getElementById('route-picker');
-    if (existing) existing.remove();
-
-    const picker = document.createElement('div');
-    picker.id = 'route-picker';
-    picker.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);' +
-      'background:var(--ink);color:white;border-radius:16px;padding:16px 20px;z-index:999;' +
-      'min-width:280px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
-
-    const title = document.createElement('div');
-    title.style.cssText = 'font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.5);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center';
-    title.innerHTML = '<span>Seleccionar ruta</span><button onclick="document.getElementById('route-picker').remove()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:18px;cursor:pointer;line-height:1">×</button>';
-    picker.appendChild(title);
-
-    routes.forEach(r => {
-      const wps = r.orders.map(o => encodeURIComponent(o.address.trim()));
-      const url = 'https://www.google.com/maps/dir/' + ORIGEN_ENC + '/' + wps.join('/');
-      const btn = document.createElement('button');
-      btn.style.cssText = 'display:block;width:100%;text-align:left;padding:10px 14px;margin-bottom:6px;' +
-        'background:rgba(255,255,255,.1);border:none;border-radius:10px;color:white;cursor:pointer;' +
-        'font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:500;transition:background .15s';
-      btn.innerHTML = '<span style="font-weight:700">' + r.name + '</span> ' +
-        '<span style="opacity:.6">· ' + r.zone + ' · ' + r.orders.length + ' parada' + (r.orders.length!==1?'s':'') + '</span>';
-      btn.onmouseover = () => btn.style.background = 'rgba(255,255,255,.2)';
-      btn.onmouseout  = () => btn.style.background = 'rgba(255,255,255,.1)';
-      btn.onclick = () => {
-        window.open(url, '_blank');
-        picker.remove();
-      };
-      picker.appendChild(btn);
-    });
-
-    const allBtn = document.createElement('button');
-    allBtn.style.cssText = 'display:block;width:100%;text-align:center;padding:10px;margin-top:4px;' +
-      'background:var(--grass);border:none;border-radius:10px;color:white;cursor:pointer;' +
-      'font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700';
-    allBtn.textContent = 'Abrir todas (' + routes.length + ')';
-    allBtn.onclick = () => {
-      routes.forEach((r,i) => {
-        const wps = r.orders.map(o => encodeURIComponent(o.address.trim()));
-        const url = 'https://www.google.com/maps/dir/' + ORIGEN_ENC + '/' + wps.join('/');
-        setTimeout(() => window.open(url, '_blank'), i * 300);
-      });
-      picker.remove();
-    };
-    picker.appendChild(allBtn);
-    document.body.appendChild(picker);
+    // origin → all waypoints in order
+    url = 'https://www.google.com/maps/dir/' + ORIGEN + '/' + waypoints.join('/');
   }
+
+  window.open(url, '_blank');
 };
 
 // ── TABS ──
@@ -1508,13 +1450,12 @@ window.analyzeMessage = async function() {
   showPreview(parsedDraft);
 };
 
-// ── PARSER — flexible, etiquetas opcionales ──
+// ── PARSER ──
 function parseLocal(raw) {
   const t = raw.trim();
   const notes = [];
   let confidence = 'high';
 
-  // ── HELPERS ──
   function extract(patterns) {
     for (const pat of patterns) {
       const m = t.match(pat);
@@ -1527,92 +1468,65 @@ function parseLocal(raw) {
     const m = t.match(labelRe);
     if (!m) return null;
     const after = t.slice(m.index + m[0].length);
+    // Stop at next field label: a line that starts with word(s) followed by colon
+    // Allow multiline content (paragraphs) within the same field
     const stop = after.search(/\n[A-ZÁÉÍÓÚÜÑa-záéíóúüñ][\wÁÉÍÓÚÜÑáéíóúüñ\s]{0,60}:/m);
     const block = stop >= 0 ? after.slice(0, stop) : after;
+    // Preserve internal line breaks, just trim edges
     return block.replace(/^\s+|\s+$/g, '') || null;
   }
 
-  // ── DETECT DELIVERY TYPE: "recojo" vs "envio" ──
-  const isRecojo = /\brecoj[eo]\b|\bpick.?up\b/i.test(t);
-  const deliveryType = isRecojo ? 'recojo' : 'envio';
-
-  // ── GOOGLE MAPS LINK (priority location) ──
-  const mapsLinkMatch = t.match(/https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|www\.google\.com\/maps|maps\.google\.com)[^\s\n]*/i);
-  const mapsLink = mapsLinkMatch ? mapsLinkMatch[0].trim() : null;
-
-  // ── DATE — flexible: etiqueta opcional, buscar patrones en todo el texto ──
-  const today = new Date(); today.setHours(0,0,0,0);
-  const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
-  const toISO  = d => d.toISOString().slice(0,10);
-  const dayNames = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
-  const months = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
-
+  // DATE
   let deliveryDate = null;
-
-  function parseDateString(s) {
-    const l = s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    if (/pasado manana/.test(l)) return toISO(addDays(today,2));
-    if (/manana/.test(l))        return toISO(addDays(today,1));
-    if (/hoy/.test(l))           return toISO(today);
-    for (let i=0;i<dayNames.length;i++) {
-      if (new RegExp('\\b'+dayNames[i]+'\\b').test(l)) {
-        let diff = i - today.getDay(); if(diff<=0)diff+=7;
-        return toISO(addDays(today,diff));
+  const dateRaw = extract([/(?:fecha de entrega|fecha|entrega)\s*:?\s*([^\n]{3,30})/i]);
+  if (dateRaw) {
+    const l = dateRaw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const dayNames = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
+    const today = new Date(); today.setHours(0,0,0,0);
+    const addDays = (d,n)=>{ const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+    const toISO = d=>d.toISOString().slice(0,10);
+    if (/pasado manana/.test(l)) deliveryDate=toISO(addDays(today,2));
+    else if (/manana|mañana/.test(l)) deliveryDate=toISO(addDays(today,1));
+    else if (/hoy/.test(l)) deliveryDate=toISO(today);
+    if (!deliveryDate) {
+      for (let i=0;i<dayNames.length;i++) {
+        if (new RegExp('\\b'+dayNames[i]+'\\b').test(l)) {
+          let diff=i-today.getDay(); if(diff<=0)diff+=7;
+          deliveryDate=toISO(addDays(today,diff)); break;
+        }
       }
     }
-    // DD/MM or DD-MM or DD/MM/YYYY
-    const sM = s.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
-    if (sM) {
-      const yr = sM[3] ? parseInt(sM[3])+(sM[3].length===2?2000:0) : today.getFullYear();
-      const d  = new Date(yr, parseInt(sM[2])-1, parseInt(sM[1]));
-      if (d < today && !sM[3]) d.setFullYear(today.getFullYear()+1);
-      return toISO(d);
+    if (!deliveryDate) {
+      const sM=dateRaw.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+      if (sM) {
+        const yr=sM[3]?parseInt(sM[3])+(sM[3].length===2?2000:0):today.getFullYear();
+        const d=new Date(yr,parseInt(sM[2])-1,parseInt(sM[1]));
+        if(d<today&&!sM[3])d.setFullYear(today.getFullYear()+1);
+        deliveryDate=toISO(d);
+      }
     }
-    // "15 de junio", "15 junio"
-    const mM = l.match(/(\d{1,2})\s+(?:de\s+)?([a-z]+)/);
-    if (mM && months[mM[2]]) {
-      const d = new Date(today.getFullYear(), months[mM[2]]-1, parseInt(mM[1]));
-      if (d < today) d.setFullYear(today.getFullYear()+1);
-      return toISO(d);
-    }
-    return null;
-  }
-
-  // Try labeled first, then scan whole text for a date-like pattern
-  const dateLabeled = extract([/(?:fecha de entrega|fecha|entrega|para el|delivery)\s*:?\s*([^\n]{3,30})/i]);
-  if (dateLabeled) deliveryDate = parseDateString(dateLabeled);
-  if (!deliveryDate) {
-    // Scan all lines for a standalone date pattern
-    for (const line of t.split('\n')) {
-      const d = parseDateString(line.trim());
-      if (d) { deliveryDate = d; break; }
+    if (!deliveryDate) {
+      const months={enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
+      const mM=l.match(/(\d{1,2})\s+de\s+([a-z]+)/);
+      if(mM&&months[mM[2]]){
+        const today2=new Date(); today2.setHours(0,0,0,0);
+        const d=new Date(today2.getFullYear(),months[mM[2]]-1,parseInt(mM[1]));
+        if(d<today2)d.setFullYear(today2.getFullYear()+1);
+        deliveryDate=d.toISOString().slice(0,10);
+      }
     }
   }
   if (!deliveryDate) { notes.push('No se detectó fecha'); confidence='medium'; }
 
-  // ── TIME RANGE — flexible ──
-  const timeRange = extract([
-    /(?:rango horario|rango|horario|hora de entrega|hora de recojo|hora)\s*:?\s*([^\n]{3,30})/i,
-    /(\d{1,2}(?::\d{2})?\s*(?:am|pm|hrs?)(?:\s*[-–a]\s*\d{1,2}(?::\d{2})?\s*(?:am|pm|hrs?)?)?)/i,
-    /(?:entre|de)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*(?:y|a)\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i,
-  ]);
+  const timeRange = extract([/(?:rango horario|rango|horario|hora de entrega)\s*:?\s*([^\n]{3,30})/i]);
 
-  // ── PRODUCT ──
-  let product = extract([
-    /(?:nombre del? box|box|producto|prod|caja|canasta)\s*:?\s*([^\n]{2,60})/i,
-  ]);
-  // Fallback: line that starts with "Box" or contains box type keywords
-  if (!product) {
-    const boxLine = t.split('\n').find(l => /^\s*box\s+\w/i.test(l) || /\b(morning|noche|desayuno|almuerzo|tarde|cumple|amor|baby)\b/i.test(l));
-    if (boxLine) product = boxLine.trim();
-  }
+  let product = extract([/(?:nombre del? box|box|producto|prod|caja|canasta)\s*:?\s*([^\n]{2,60})/i]);
   if (product) {
     product = product.trim();
     if (/^box\s+/i.test(product)) product = 'Box ' + product.replace(/^box\s+/i,'').charAt(0).toUpperCase() + product.replace(/^box\s+/i,'').slice(1);
     else product = 'Box ' + product.charAt(0).toUpperCase() + product.slice(1);
   }
 
-  // ── EXTRAS: cinta + frase en tapa + adicionales ──
   const extraParts = [];
   const cinta = extract([/(?:color de cinta|cinta|cin)\s*:?\s*([^\n]{1,40})/i]);
   if (cinta) extraParts.push('Cinta: ' + cinta);
@@ -1622,109 +1536,71 @@ function parseLocal(raw) {
   if (adicionales) extraParts.push(adicionales);
   const extras = extraParts.length ? extraParts.join('  ·  ') : null;
 
-  // ── SENDER (quien envía) — flexible ──
+  // ── Quien envía — acepta: "Persona que envía:", "Envía:", "Envia:", "Env:", "Cliente:"
   const clientName = extract([
     /persona que env[íi]a\s*:?\s*([^\n]{2,60})/i,
     /quien env[íi]a\s*:?\s*([^\n]{2,60})/i,
     /env[íi]a\s*:?\s*([^\n]{2,60})/i,
-    /env\s*:\s*([^\n]{2,60})/i,
+    /env\s*:?\s*([^\n]{2,60})/i,
     /comprador\s*:?\s*([^\n]{2,60})/i,
     /cliente\s*:?\s*([^\n]{2,60})/i,
-    // recojo: the person picking up is usually the "sender"
-    /recoge\s*:?\s*([^\n]{2,60})/i,
-    /nombre\s*:?\s*([^\n]{2,60})/i,
   ]);
 
-  // ── RECIPIENT (quien recibe) ──
+  // ── Quien recibe — acepta: "Persona que recibe:", "Recibe:", "Rec:", "Destinatario:"
   const recipientName = extract([
     /persona que recibe\s*:?\s*([^\n]{2,60})/i,
     /destinatario\s*:?\s*([^\n]{2,60})/i,
     /recibe\s*:?\s*([^\n]{2,60})/i,
-    /rec\s*:\s*([^\n]{2,60})/i,
-    /para\s*:\s*([^\n]{2,60})/i,
+    /rec\s*:?\s*([^\n]{2,60})/i,
+    /para\s*:?\s*([^\n]{2,60})/i,
   ]);
 
-  // ── ADDRESS — prioritize maps link, then text ──
-  const addressText = extract([
+  // ── Dirección — acepta: "Dirección de entrega:", "Dirección:", "Dir:", "Domicilio:"
+  const address = extract([
     /direcci[oó]n de entrega\s*:?\s*([^\n]{4,120})/i,
     /direcci[oó]n\s*:?\s*([^\n]{4,120})/i,
     /domicilio\s*:?\s*([^\n]{4,120})/i,
-    /dir\s*:\s*([^\n]{4,120})/i,
-    /entrega en\s*:?\s*([^\n]{4,120})/i,
+    /dir\s*:?\s*([^\n]{4,120})/i,
   ]);
-  // Use maps link as address if available (especially for MZ/LT addresses)
-  const hasMzLt = addressText && /\b(mz|lt|manzana|lote)\b/i.test(addressText);
-  const address = (mapsLink && (hasMzLt || !addressText)) ? mapsLink : (addressText || mapsLink || null);
 
-  // ── REFERENCE ──
+  // ── Referencia — acepta: "Referencia:", "Ref:"
   const reference = extract([
     /referencia\s*:?\s*([^\n]{2,100})/i,
-    /ref\s*:\s*([^\n]{2,100})/i,
+    /ref\s*:?\s*([^\n]{2,100})/i,
   ]);
 
-  // ── PHONES ──
-  // Collect all 9-digit Peruvian numbers from text
-  const allNums = [...t.matchAll(/(?<!\d)(9\d{8})(?!\d)/g)].map(m=>m[1]);
+  // ── Tel quien envía — acepta versión larga o corta
   const phoneRaw = extract([
     /n[uú]mero de contacto de (?:la )?persona que env[íi]a\s*:?\s*([\d\s\+\-]{7,15})/i,
     /tel[eé]fono de quien env[íi]a\s*:?\s*([\d\s\+\-]{7,15})/i,
-    /tel quien env[íi]a\s*:?\s*([\d\s\+\-]{7,15})/i,
-    /n[uú]mero de quien env[íi]a\s*:?\s*([\d\s\+\-]{7,15})/i,
     /n[uú]mero de contacto de (?:la )?persona que env[íi][ao]\s*:?\s*([\d\s\+\-]{7,15})/i,
+    /tel quien env[íi]a\s*:?\s*([\d\s\+\-]{7,15})/i,
   ]);
-  const phone = phoneRaw ? phoneRaw.replace(/\s+/g,'') : (allNums[0]||null);
+  const phone = phoneRaw ? phoneRaw.replace(/\s+/g,'') : null;
 
+  // ── Tel quien recibe — acepta versión larga o corta
   const recPhoneRaw = extract([
     /n[uú]mero de contacto de (?:la )?persona que recibe\s*:?\s*([\d\s\+\-]{7,15})/i,
     /tel[eé]fono de quien recibe\s*:?\s*([\d\s\+\-]{7,15})/i,
-    /tel quien recibe\s*:?\s*([\d\s\+\-]{7,15})/i,
     /n[uú]mero de contacto de (?:la )?persona que recib[ae]\s*:?\s*([\d\s\+\-]{7,15})/i,
+    /tel quien recibe\s*:?\s*([\d\s\+\-]{7,15})/i,
   ]);
-  const recipientPhone = recPhoneRaw ? recPhoneRaw.replace(/\s+/g,'') : (allNums[1]||null);
+  const recipientPhone = recPhoneRaw ? recPhoneRaw.replace(/\s+/g,'') : null;
 
-  // ── CARD MESSAGE ──
+  // ── Mensaje para tarjeta — acepta: "Mensaje para la tarjeta:", "Mensaje:", "Msg:"
   let cardMessage = extractBlock(/mensaje para la tarjeta\s*:?[ \t]*/i);
   if (!cardMessage) cardMessage = extractBlock(/mensaje\s*:?[ \t]*/i);
   if (!cardMessage) cardMessage = extractBlock(/msg\s*:?[ \t]*/i);
 
-  // ── PRICE ──
   const precioRaw = extract([
     /total\s*:?\s*(?:S\/)?\s*([\d]+(?:[.,]\d{1,2})?)/i,
     /precio\s*:?\s*(?:S\/)?\s*([\d]+(?:[.,]\d{1,2})?)/i,
-    /costo\s*:?\s*(?:S\/)?\s*([\d]+(?:[.,]\d{1,2})?)/i,
   ]);
   const precio = precioRaw ? precioRaw.replace(',','.') : null;
 
-  // ── ROUTE ZONE (for grouping) — based on district keywords ──
-  const DISTRICTS = {
-    'Miraflores':['miraflores'],'San Isidro':['san isidro'],'Surco':['surco','santiago de surco'],
-    'La Molina':['la molina'],'San Borja':['san borja'],'Barranco':['barranco'],
-    'San Miguel':['san miguel'],'Pueblo Libre':['pueblo libre'],'Magdalena':['magdalena'],
-    'Lince':['lince'],'Jesús María':['jesus maria','jesús maría'],'Chorrillos':['chorrillos'],
-    'Callao':['callao'],'San Martín de Porres':['san martin','smp'],'Los Olivos':['los olivos'],
-    'Ate':['ate'],'SJL':['sjl','san juan de lurigancho'],'Villa El Salvador':['ves','villa el salvador'],
-    'Surquillo':['surquillo'],'San Luis':['san luis'],'La Victoria':['la victoria'],
-  };
-  let routeZone = null;
-  const addrLower = (address||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  const textLower = t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  for (const [zone, keys] of Object.entries(DISTRICTS)) {
-    if (keys.some(k => addrLower.includes(k) || textLower.includes(k))) {
-      routeZone = zone; break;
-    }
-  }
-
   if (!clientName) { notes.push('No se detectó quien envía'); confidence='medium'; }
 
-  return {
-    clientName, phone, recipientName, recipientPhone,
-    deliveryDate, timeRange,
-    address, reference, mapsLink,
-    product, extras, cardMessage, precio,
-    deliveryType, routeZone,
-    notes: notes.length ? notes.join('. ') : null,
-    confidence
-  };
+  return { clientName, phone, recipientName, recipientPhone, deliveryDate, timeRange, address, reference, product, extras, cardMessage, precio, notes:notes.length?notes.join('. '):null, confidence };
 }
 
 // ── PREVIEW ──
