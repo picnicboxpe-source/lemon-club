@@ -1010,6 +1010,22 @@ window.onCatChange = function(idx) {
   const cat = document.getElementById('v-cat-' + idx).value;
   const sel = document.getElementById('v-prod-' + idx);
   sel.innerHTML = buildProdOptions(cat);
+  // Limpiar monto al cambiar categoría
+  const montoInput = document.getElementById('v-monto-' + idx);
+  if (montoInput) montoInput.value = '';
+};
+
+window.onProdChange = function(idx) {
+  const prodNombre = document.getElementById('v-prod-' + idx).value;
+  const montoInput = document.getElementById('v-monto-' + idx);
+  if (!montoInput) return;
+  if (!prodNombre) { montoInput.value = ''; return; }
+  const prod = productos.find(p => p.nombre === prodNombre);
+  if (prod && prod.precio) {
+    montoInput.value = Number(prod.precio).toFixed(2);
+  } else {
+    montoInput.value = '';
+  }
 };
 
 function actualizarSelectProductos() {
@@ -1038,7 +1054,7 @@ window.generarFilasProductos = function() {
       </div>
       <div class="form-group">
         <label>Producto ${n > 1 ? (i+1) : ''}</label>
-        <select class="v-prod-select" id="v-prod-${i}">
+        <select class="v-prod-select" id="v-prod-${i}" onchange="onProdChange(${i})">
           <option value="">← Elige categoría</option>
         </select>
       </div>
@@ -1619,7 +1635,7 @@ window.addEditItem = function(it) {
     </div>
     <div class="form-group">
       <label>Producto</label>
-      <select class="edit-prod" id="eprod-${i}">
+      <select class="edit-prod" id="eprod-${i}" onchange="onEditProdChange(${i})">
         <option value="">← Categoría</option>
       </select>
     </div>
@@ -1646,6 +1662,19 @@ window.onEditCatChange = function(i) {
   const cat = document.getElementById('ecat-' + i)?.value;
   const sel = document.getElementById('eprod-' + i);
   if (sel) sel.innerHTML = buildProdOptions(cat);
+  const montoInput = document.getElementById('emonto-' + i);
+  if (montoInput) montoInput.value = '';
+};
+
+window.onEditProdChange = function(i) {
+  const prodNombre = document.getElementById('eprod-' + i)?.value;
+  const montoInput = document.getElementById('emonto-' + i);
+  if (!montoInput) return;
+  if (!prodNombre) { montoInput.value = ''; return; }
+  const prod = productos.find(p => p.nombre === prodNombre);
+  if (prod && prod.precio) {
+    montoInput.value = Number(prod.precio).toFixed(2);
+  }
 };
 
 window.guardarEditPedido = function() {
