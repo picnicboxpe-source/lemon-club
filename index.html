@@ -562,6 +562,30 @@ tr:hover td { background: rgba(200,212,0,0.05); }
       </div>
     </div>
 
+    </div>
+
+    <!-- MODAL EDITAR VENTA -->
+    <div class="modal-backdrop" id="modal-edit-venta">
+      <div class="modal" style="max-width:520px;width:95%">
+        <h3>Editar venta</h3>
+        <p id="edit-venta-label" style="margin-bottom:12px;font-size:12px;color:var(--text3)"></p>
+        <div class="form-row" style="margin-bottom:10px">
+          <div class="form-group"><label>Cliente</label><input type="text" id="ev-cliente" placeholder="Nombre del cliente"></div>
+          <div class="form-group"><label>Ciudad</label>
+            <select id="ev-ciudad"><option>Caracas</option><option>Interior</option></select>
+          </div>
+          <div class="form-group"><label>Fecha</label><input type="date" id="ev-fecha"></div>
+          <div class="form-group"><label>Dirección</label><input type="text" id="ev-direccion" placeholder="Dirección"></div>
+        </div>
+        <div id="ev-items-container" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
+        <button class="btn btn-primary btn-sm" onclick="addEvItem()" style="margin-bottom:12px">+ Agregar producto</button>
+        <div class="modal-btns">
+          <button class="btn" onclick="cerrarEditVenta()">Cancelar</button>
+          <button class="btn btn-primary" onclick="guardarEditVenta()">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
+
     <!-- PEDIDOS -->
     <div id="tab-pedidos" class="panel">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
@@ -633,6 +657,43 @@ tr:hover td { background: rgba(200,212,0,0.05); }
       <button class="btn btn-primary" id="btn-add-prod" onclick="agregarProducto()">+ Agregar producto</button>
       <div style="margin-top:16px;display:flex;gap:6px;flex-wrap:wrap" id="i-cats-filter"></div>
       <div class="inv-grid" id="i-grid"><div class="empty" style="grid-column:1/-1">Sin productos</div></div>
+    </div>
+
+    <!-- MODAL EDITAR PRODUCTO -->
+    <div class="modal-backdrop" id="modal-edit-prod">
+      <div class="modal" style="max-width:440px;width:95%">
+        <h3>Editar producto</h3>
+        <p style="font-size:11px;color:var(--text3);margin-bottom:14px">El precio nuevo aplica solo para ventas desde hoy en adelante.</p>
+        <div class="form-row">
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Nombre</label>
+            <input type="text" id="ep-nombre" placeholder="Nombre del producto">
+          </div>
+          <div class="form-group">
+            <label>Categoría</label>
+            <select id="ep-categoria">
+              <option>Collares</option><option>Aretes</option><option>Pulseras</option>
+              <option>Anillos</option><option>Bolsos</option><option>Cinturones</option><option>Ganchos</option><option>Otros</option>
+            </select>
+          </div>
+          <div class="form-group" id="ep-otros-group" style="display:none">
+            <label>Nombre categoría</label>
+            <input type="text" id="ep-otros-nombre" placeholder="Especifica la categoría">
+          </div>
+          <div class="form-group">
+            <label>Precio ($)</label>
+            <input type="number" id="ep-precio" placeholder="0.00" step="0.01" min="0">
+          </div>
+        </div>
+        <div style="background:var(--beige);border-radius:14px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)">
+          <span style="font-weight:500">Stock actual:</span> <span id="ep-stock-actual" style="color:var(--lime-dark);font-weight:500"></span>
+          <span style="color:var(--text3);margin-left:8px;font-size:11px">(Ajusta el stock desde los botones +/− de la tarjeta)</span>
+        </div>
+        <div class="modal-btns">
+          <button class="btn" onclick="cerrarEditProd()">Cancelar</button>
+          <button class="btn btn-primary" onclick="guardarEditProd()">Guardar cambios</button>
+        </div>
+      </div>
     </div>
 
     <!-- FINANZAS -->
@@ -975,6 +1036,8 @@ function init() {
 
 /* ════ TAB NAV ════ */
 window.showTab = function(t) {
+  // Guardar draft de ventas si se está cambiando de pestaña
+  if (t !== 'ventas') saveDraftVenta();
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(tb => tb.classList.remove('active'));
   document.getElementById('tab-' + t).classList.add('active');
@@ -985,7 +1048,67 @@ window.showTab = function(t) {
   if (t === 'pedidos')  renderPedidos();
   if (t === 'balance')  actualizarBalance();
   if (t === 'historial')renderHistorial();
+  // Restaurar draft al volver a ventas
+  if (t === 'ventas') {
+    setTimeout(() => restoreDraftVenta(), 80);
+  }
 };
+
+/* ════ DRAFT VENTAS (guardar estado del formulario) ════ */
+function saveDraftVenta() {
+  const n = parseInt(document.getElementById('v-num-productos')?.value) || 1;
+  const draft = {
+    cliente:   document.getElementById('v-cliente')?.value || '',
+    ciudad:    document.getElementById('v-ciudad')?.value || 'Caracas',
+    fecha:     document.getElementById('v-fecha')?.value || today(),
+    direccion: document.getElementById('v-direccion')?.value || '',
+    numProds:  n,
+    items: []
+  };
+  for (let i = 0; i < n; i++) {
+    draft.items.push({
+      cat:   document.getElementById('v-cat-'  + i)?.value || '',
+      prod:  document.getElementById('v-prod-' + i)?.value || '',
+      cant:  document.getElementById('v-cant-' + i)?.value || '1',
+      monto: document.getElementById('v-monto-'+ i)?.value || ''
+    });
+  }
+  try { sessionStorage.setItem('lc_draft_venta', JSON.stringify(draft)); } catch(e) {}
+}
+
+function restoreDraftVenta() {
+  try {
+    const raw = sessionStorage.getItem('lc_draft_venta');
+    if (!raw) return false;
+    const draft = JSON.parse(raw);
+    if (document.getElementById('v-cliente'))   document.getElementById('v-cliente').value   = draft.cliente   || '';
+    if (document.getElementById('v-ciudad'))    document.getElementById('v-ciudad').value    = draft.ciudad    || 'Caracas';
+    if (document.getElementById('v-fecha'))     document.getElementById('v-fecha').value     = draft.fecha     || today();
+    if (document.getElementById('v-direccion')) document.getElementById('v-direccion').value = draft.direccion || '';
+    const sel = document.getElementById('v-num-productos');
+    if (sel) { sel.value = draft.numProds || 1; generarFilasProductos(); }
+    setTimeout(() => {
+      (draft.items || []).forEach((it, i) => {
+        const catSel = document.getElementById('v-cat-' + i);
+        if (catSel && it.cat) {
+          catSel.value = it.cat;
+          onCatChange(i);
+          setTimeout(() => {
+            const prodSel = document.getElementById('v-prod-' + i);
+            if (prodSel && it.prod) prodSel.value = it.prod;
+            if (document.getElementById('v-cant-'  + i)) document.getElementById('v-cant-'  + i).value = it.cant  || '1';
+            if (document.getElementById('v-monto-' + i)) document.getElementById('v-monto-' + i).value = it.monto || '';
+          }, 50);
+        }
+      });
+    }, 50);
+    return true;
+  } catch(e) { return false; }
+}
+
+function clearDraftVenta() {
+  try { sessionStorage.removeItem('lc_draft_venta'); } catch(e) {}
+}
 
 /* ════ VENTAS ════ */
 function getCategorias() {
@@ -1018,13 +1141,67 @@ window.onCatChange = function(idx) {
 window.onProdChange = function(idx) {
   const prodNombre = document.getElementById('v-prod-' + idx).value;
   const montoInput = document.getElementById('v-monto-' + idx);
+  const cantInput  = document.getElementById('v-cant-' + idx);
   if (!montoInput) return;
   if (!prodNombre) { montoInput.value = ''; return; }
   const prod = productos.find(p => p.nombre === prodNombre);
+  // Limitar cantidad al stock disponible
+  if (cantInput && prod) {
+    const cantActual = parseInt(cantInput.value) || 1;
+    if (cantActual > prod.cantidad) cantInput.value = Math.max(1, prod.cantidad);
+    cantInput.max = prod.cantidad;
+    // Mostrar stock máximo junto al input
+    const stockLabel = document.getElementById('v-stock-' + idx);
+    if (stockLabel) stockLabel.textContent = 'máx ' + prod.cantidad;
+    // Opacidad botón +
+    const btnPlus = cantInput.nextElementSibling;
+    if (btnPlus) btnPlus.style.opacity = parseInt(cantInput.value) >= prod.cantidad ? '0.35' : '1';
+  }
   if (prod && prod.precio) {
-    montoInput.value = Number(prod.precio).toFixed(2);
+    const cant = parseInt(cantInput?.value) || 1;
+    montoInput.value = (Number(prod.precio) * cant).toFixed(2);
   } else {
     montoInput.value = '';
+  }
+};
+
+window.clampCantVenta = function(idx) {
+  const cantInput  = document.getElementById('v-cant-' + idx);
+  const prodNombre = document.getElementById('v-prod-' + idx)?.value;
+  if (!cantInput) return;
+  const prod = prodNombre ? productos.find(p => p.nombre === prodNombre) : null;
+  const max  = prod ? prod.cantidad : 999;
+  let val = parseInt(cantInput.value) || 1;
+  if (val < 1) val = 1;
+  if (val > max) val = max;
+  cantInput.value = val;
+  const btnPlus = cantInput.nextElementSibling;
+  if (btnPlus) btnPlus.style.opacity = val >= max ? '0.35' : '1';
+  recalcularMontoVenta(idx);
+};
+
+window.cambiarCantVenta = function(idx, delta) {
+  const cantInput = document.getElementById('v-cant-' + idx);
+  if (!cantInput) return;
+  const prodNombre = document.getElementById('v-prod-' + idx)?.value;
+  const prod = prodNombre ? productos.find(p => p.nombre === prodNombre) : null;
+  const maxStock = prod ? prod.cantidad : 999;
+  const nueva = Math.min(maxStock, Math.max(1, (parseInt(cantInput.value) || 1) + delta));
+  cantInput.value = nueva;
+  // Feedback visual si ya llegó al límite
+  const btnPlus = cantInput.nextElementSibling;
+  if (btnPlus) btnPlus.style.opacity = nueva >= maxStock ? '0.35' : '1';
+  recalcularMontoVenta(idx);
+};
+
+window.recalcularMontoVenta = function(idx) {
+  const prodNombre = document.getElementById('v-prod-' + idx)?.value;
+  const montoInput = document.getElementById('v-monto-' + idx);
+  if (!montoInput || !prodNombre) return;
+  const prod = productos.find(p => p.nombre === prodNombre);
+  if (prod && prod.precio) {
+    const cant = parseInt(document.getElementById('v-cant-' + idx)?.value) || 1;
+    montoInput.value = (Number(prod.precio) * cant).toFixed(2);
   }
 };
 
@@ -1058,6 +1235,22 @@ window.generarFilasProductos = function() {
           <option value="">← Elige categoría</option>
         </select>
       </div>
+      <div class="form-group" style="max-width:110px">
+        <label>Cantidad <span id="v-stock-${i}" style="color:var(--lime-dark);font-size:9px;font-weight:500"></span></label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <button type="button" onclick="cambiarCantVenta(${i},-1)"
+            style="width:28px;height:28px;border-radius:10px;border:1.5px solid var(--border);background:var(--beige);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text);font-family:inherit;transition:all .18s"
+            onmouseover="this.style.background='#EDF0A0';this.style.borderColor='var(--lemon)'"
+            onmouseout="this.style.background='var(--beige)';this.style.borderColor='var(--border)'">−</button>
+          <input type="number" id="v-cant-${i}" value="1" min="1"
+            style="width:40px;text-align:center;padding:5px 4px;border-radius:10px;border:1.5px solid var(--border-light);background:var(--white);color:var(--text);font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;outline:none"
+            oninput="clampCantVenta(${i})">
+          <button type="button" onclick="cambiarCantVenta(${i},1)"
+            style="width:28px;height:28px;border-radius:10px;border:1.5px solid var(--border);background:var(--beige);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text);font-family:inherit;transition:all .18s"
+            onmouseover="this.style.background='#EDF0A0';this.style.borderColor='var(--lemon)'"
+            onmouseout="this.style.background='var(--beige)';this.style.borderColor='var(--border)'">+</button>
+        </div>
+      </div>
       <div class="form-group" style="max-width:120px">
         <label>Monto ($)</label>
         <input type="number" class="v-monto-input" id="v-monto-${i}" placeholder="0.00" step="0.01">
@@ -1075,11 +1268,11 @@ window.registrarVenta = function() {
   const items = [];
   for (let i = 0; i < n; i++) {
     const prod  = document.getElementById('v-prod-' + i)?.value;
-    const cant  = 1;
+    const cant  = parseInt(document.getElementById('v-cant-' + i)?.value) || 1;
     const monto = parseFloat(document.getElementById('v-monto-' + i)?.value) || 0;
     if (!prod || !monto) { alert('Completa producto y monto en todas las filas.'); return; }
     const p = productos.find(x => x.nombre === prod);
-    if (p && p.cantidad < cant) { alert('Stock insuficiente para: ' + prod); return; }
+    if (p && p.cantidad < cant) { alert('Stock insuficiente para: ' + prod + ' (disponible: ' + p.cantidad + ')'); return; }
     items.push({ producto: prod, cantidad: cant, monto });
   }
   const montoTotal = items.reduce((a, it) => a + it.monto, 0);
@@ -1094,9 +1287,10 @@ window.registrarVenta = function() {
     items,
     monto: montoTotal,
     ciudad, fecha, direccion: dir,
-    hora: new Date().toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'})
+    hora: new Date().toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit', timeZone:'America/Caracas'})
   });
   saveRemote('ventas', ventas);
+  clearDraftVenta();
   document.getElementById('v-cliente').value   = '';
   document.getElementById('v-direccion').value = '';
   document.getElementById('v-num-productos').value = '1';
@@ -1147,7 +1341,7 @@ function renderVentas() {
     tb.innerHTML = meses.map(ym => {
       const [y, m] = ym.split('-');
       const label = ym === 'sin-fecha' ? 'Sin fecha' : (MESES_ES[parseInt(m)] + ' ' + y);
-      const lista = porMes[ym].slice().reverse();
+      const lista = porMes[ym].slice();
       const totalMes = lista.reduce((a,v) => a+v.monto, 0);
       const mesId = 'mes_' + ym.replace('-','_');
       const filas = lista.map(v => {
@@ -1170,9 +1364,16 @@ function renderVentas() {
           </td>
           <td><span class="pill pill-orange">${v.ciudad}</span></td>
           <td style="font-weight:500;color:var(--lime-dark)">${fmt(v.monto)}</td>
-          <td>${fmtDate(v.fecha)}</td>
+          <td>
+            <div>${fmtDate(v.fecha)}</div>
+            ${v.hora ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">🕐 ${v.hora}</div>` : ''}
+          </td>
           <td style="font-size:12px;color:var(--text3)">${v.direccion||'—'}</td>
-          <td>${canDel?`<button class="btn btn-sm" onclick="eliminarVenta(${v.id})" style="color:var(--danger);border-color:#F5C2BF">&#10005;</button>`:''}</td>
+          <td>${canDel?`
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-sm" onclick="editarVenta(${v.id})" style="color:var(--lemon-deep);border-color:#C0CE40">✎</button>
+              <button class="btn btn-sm" onclick="eliminarVenta(${v.id})" style="color:var(--danger);border-color:#F5C2BF">&#10005;</button>
+            </div>`:''}</td>
         </tr>`;
       }).join('');
       return `<tr id="hdr_${mesId}" style="cursor:pointer;background:linear-gradient(135deg,#F8F5E4,#EEE5C4)" onclick="toggleMes('${mesId}')">
@@ -1190,7 +1391,7 @@ function renderVentas() {
     return;
   }
 
-  tb.innerHTML = list.slice().reverse().map(v => {
+  tb.innerHTML = list.slice().map(v => {
     const items = v.items || [{ producto: v.producto, cantidad: v.cantidad, monto: v.monto }];
     const detId = 'det_' + v.id;
     const detalle = items.map(it =>
@@ -1210,9 +1411,16 @@ function renderVentas() {
       </td>
       <td><span class="pill pill-orange">${v.ciudad}</span></td>
       <td style="font-weight:500;color:var(--lime-dark)">${fmt(v.monto)}</td>
-      <td>${fmtDate(v.fecha)}</td>
+      <td>
+        <div>${fmtDate(v.fecha)}</div>
+        ${v.hora ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">🕐 ${v.hora}</div>` : ''}
+      </td>
       <td style="font-size:12px;color:var(--text3)">${v.direccion || '—'}</td>
-      <td>${canDel ? `<button class="btn btn-sm" onclick="eliminarVenta(${v.id})" style="color:var(--danger);border-color:#F5C2BF">&#10005;</button>` : ''}</td>
+      <td>${canDel ? `
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-sm" onclick="editarVenta(${v.id})" style="color:var(--lemon-deep);border-color:#C0CE40">✎</button>
+          <button class="btn btn-sm" onclick="eliminarVenta(${v.id})" style="color:var(--danger);border-color:#F5C2BF">✕</button>
+        </div>` : ''}</td>
     </tr>`;
   }).join('');
 }
@@ -1230,6 +1438,149 @@ window.eliminarVenta = function(id) {
     ventas.splice(idx, 1); saveRemote('ventas', ventas);
   }
   actualizarSelectProductos(); renderVentas(); renderFinanzas(); actualizarBalance();
+};
+
+let ventaEditId = null;
+
+window.editarVenta = function(id) {
+  if (currentRole !== 'admin') return;
+  const v = ventas.find(x => x.id === id);
+  if (!v) return;
+  ventaEditId = id;
+  document.getElementById('ev-cliente').value   = v.cliente  || '';
+  document.getElementById('ev-ciudad').value    = v.ciudad   || 'Caracas';
+  document.getElementById('ev-fecha').value     = v.fecha    || today();
+  document.getElementById('ev-direccion').value = v.direccion|| '';
+  document.getElementById('edit-venta-label').textContent = 'Venta del ' + fmtDate(v.fecha) + ' · ' + fmt(v.monto);
+  const cont = document.getElementById('ev-items-container');
+  cont.innerHTML = '';
+  (v.items || [{ producto: v.producto, cantidad: v.cantidad || 1, monto: v.monto }])
+    .forEach(it => addEvItem(it));
+  document.getElementById('modal-edit-venta').classList.add('show');
+};
+
+window.addEvItem = function(it) {
+  const cont = document.getElementById('ev-items-container');
+  const i = cont.children.length;
+  const div = document.createElement('div');
+  div.className = 'form-row';
+  div.style.cssText = 'background:var(--beige);border-radius:14px;padding:8px 10px;margin-bottom:0;border:1px solid var(--border-light)';
+  div.innerHTML = `
+    <div class="form-group">
+      <label>Categoría</label>
+      <select class="ev-cat" id="evcat-${i}" onchange="onEvCatChange(${i})">${buildCatOptions()}</select>
+    </div>
+    <div class="form-group">
+      <label>Producto</label>
+      <select class="ev-prod" id="evprod-${i}" onchange="onEvProdChange(${i})"><option value="">← Categoría</option></select>
+    </div>
+    <div class="form-group" style="max-width:90px">
+      <label>Cantidad</label>
+      <div style="display:flex;align-items:center;gap:3px">
+        <button type="button" onclick="cambiarCantEv(${i},-1)"
+          style="width:26px;height:26px;border-radius:9px;border:1.5px solid var(--border);background:var(--beige);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">−</button>
+        <input type="number" id="evcant-${i}" value="${it ? it.cantidad : 1}" min="1"
+          style="width:36px;text-align:center;padding:4px 2px;border-radius:9px;border:1.5px solid var(--border-light);background:var(--white);font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;outline:none"
+          oninput="recalcularMontoEv(${i})">
+        <button type="button" onclick="cambiarCantEv(${i},1)"
+          style="width:26px;height:26px;border-radius:9px;border:1.5px solid var(--border);background:var(--beige);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>
+      </div>
+    </div>
+    <div class="form-group" style="max-width:100px">
+      <label>Monto ($)</label>
+      <input type="number" class="ev-monto" id="evmonto-${i}" placeholder="0.00" step="0.01" value="${it ? it.monto : ''}">
+    </div>
+    <div class="form-group" style="max-width:40px;justify-content:flex-end;padding-top:18px">
+      <button class="btn btn-sm" onclick="this.closest('div.form-row').remove()" style="color:var(--danger);border-color:#F5C2BF">✕</button>
+    </div>`;
+  cont.appendChild(div);
+  if (it) {
+    const catSel = document.getElementById('evcat-' + i);
+    const cat = (productos.find(x => x.nombre === it.producto)||{}).categoria;
+    if (cat) {
+      catSel.value = cat;
+      onEvCatChange(i);
+      setTimeout(() => { document.getElementById('evprod-'+i).value = it.producto; }, 0);
+    }
+  }
+};
+
+window.onEvCatChange = function(i) {
+  const cat = document.getElementById('evcat-' + i)?.value;
+  const sel = document.getElementById('evprod-' + i);
+  if (sel) { sel.innerHTML = buildProdOptions(cat); }
+};
+
+window.onEvProdChange = function(i) {
+  const prodNombre = document.getElementById('evprod-' + i)?.value;
+  const montoInput = document.getElementById('evmonto-' + i);
+  if (!montoInput || !prodNombre) return;
+  const prod = productos.find(p => p.nombre === prodNombre);
+  if (prod && prod.precio) {
+    const cant = parseInt(document.getElementById('evcant-' + i)?.value) || 1;
+    montoInput.value = (Number(prod.precio) * cant).toFixed(2);
+  }
+};
+
+window.cambiarCantEv = function(i, delta) {
+  const cantInput = document.getElementById('evcant-' + i);
+  if (!cantInput) return;
+  cantInput.value = Math.max(1, (parseInt(cantInput.value) || 1) + delta);
+  recalcularMontoEv(i);
+};
+
+window.recalcularMontoEv = function(i) {
+  const prodNombre = document.getElementById('evprod-' + i)?.value;
+  const montoInput = document.getElementById('evmonto-' + i);
+  if (!montoInput || !prodNombre) return;
+  const prod = productos.find(p => p.nombre === prodNombre);
+  if (prod && prod.precio) {
+    const cant = parseInt(document.getElementById('evcant-' + i)?.value) || 1;
+    montoInput.value = (Number(prod.precio) * cant).toFixed(2);
+  }
+};
+
+window.guardarEditVenta = function() {
+  const v = ventas.find(x => x.id === ventaEditId);
+  if (!v) return;
+  const cont = document.getElementById('ev-items-container');
+  const rows = cont.querySelectorAll('.form-row');
+  const items = [];
+  let ok = true;
+  rows.forEach((row) => {
+    const prod  = row.querySelector('.ev-prod')?.value;
+    const cant  = parseInt(row.querySelector('[id^="evcant-"]')?.value) || 1;
+    const monto = parseFloat(row.querySelector('.ev-monto')?.value) || 0;
+    if (!prod || !monto) { ok = false; return; }
+    items.push({ producto: prod, cantidad: cant, monto });
+  });
+  if (!ok || !items.length) { alert('Completa todos los productos.'); return; }
+  // Devolver stock viejo
+  (v.items || []).forEach(it => {
+    const p = productos.find(x => x.nombre === it.producto);
+    if (p) p.cantidad += it.cantidad;
+  });
+  // Verificar y descontar stock nuevo
+  for (const it of items) {
+    const p = productos.find(x => x.nombre === it.producto);
+    if (p && p.cantidad < it.cantidad) { alert('Stock insuficiente: ' + it.producto + ' (disponible: ' + p.cantidad + ')'); return; }
+    if (p) p.cantidad -= it.cantidad;
+  }
+  v.cliente   = document.getElementById('ev-cliente').value.trim() || v.cliente;
+  v.ciudad    = document.getElementById('ev-ciudad').value;
+  v.fecha     = document.getElementById('ev-fecha').value;
+  v.direccion = document.getElementById('ev-direccion').value;
+  v.items     = items;
+  v.monto     = items.reduce((a, it) => a + it.monto, 0);
+  saveRemote('productos', productos);
+  saveRemote('ventas', ventas);
+  cerrarEditVenta();
+  actualizarSelectProductos(); renderVentas(); renderFinanzas(); actualizarBalance();
+};
+
+window.cerrarEditVenta = function() {
+  document.getElementById('modal-edit-venta').classList.remove('show');
+  ventaEditId = null;
 };
 
 /* ════ INVENTARIO ════ */
@@ -1269,7 +1620,8 @@ function renderInventario() {
   cf.innerHTML = cats.map(c =>
     `<span class="tag${filtroInvCat===c?' active':''}" onclick="setInvCat('${c}',this)">${c}</span>`
   ).join('');
-  const lista = filtroInvCat === 'Todos' ? productos : productos.filter(p => p.categoria === filtroInvCat);
+  const lista = (filtroInvCat === 'Todos' ? productos : productos.filter(p => p.categoria === filtroInvCat))
+    .slice().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
   const grid = document.getElementById('i-grid');
   const isAdmin = currentRole === 'admin';
   if (!lista.length) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1">Sin productos</div>'; return; }
@@ -1285,7 +1637,10 @@ function renderInventario() {
       ${isAdmin ? `<button class="qty-btn" onclick="cambiarQty(${p.id},-1)">−</button>` : ''}
       <span class="qty-val">${p.cantidad}</span>
       ${isAdmin ? `<button class="qty-btn" onclick="cambiarQty(${p.id},1)">+</button>` : ''}
-      ${isAdmin ? `<button class="btn btn-sm" onclick="eliminarProducto(${p.id})" style="margin-left:auto;color:var(--danger);border-color:#F5C2BF">✕</button>` : ''}
+      ${isAdmin ? `<div style="display:flex;gap:4px;margin-left:auto">
+        <button class="btn btn-sm" onclick="abrirEditProd(${p.id})" style="color:var(--lemon-deep);border-color:#C0CE40;padding:4px 8px">✎</button>
+        <button class="btn btn-sm" onclick="eliminarProducto(${p.id})" style="color:var(--danger);border-color:#F5C2BF;padding:4px 8px">✕</button>
+      </div>` : ''}
     </div>
   </div>`).join('');
 }
@@ -1304,6 +1659,63 @@ window.eliminarProducto = function(id) {
   productos = productos.filter(p => p.id !== id);
   saveRemote('productos', productos); renderInventario(); actualizarSelectProductos();
 };
+
+let prodEditId = null;
+
+window.abrirEditProd = function(id) {
+  if (currentRole !== 'admin') return;
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+  prodEditId = id;
+  document.getElementById('ep-nombre').value    = p.nombre    || '';
+  document.getElementById('ep-precio').value    = p.precio != null ? Number(p.precio).toFixed(2) : '';
+  document.getElementById('ep-stock-actual').textContent = p.cantidad + ' unidades';
+  // Categoría: si existe en las opciones, seleccionarla; si no, poner Otros y rellenar nombre
+  const catSel = document.getElementById('ep-categoria');
+  const opciones = Array.from(catSel.options).map(o => o.value);
+  if (opciones.includes(p.categoria)) {
+    catSel.value = p.categoria;
+    document.getElementById('ep-otros-group').style.display = 'none';
+  } else {
+    catSel.value = 'Otros';
+    document.getElementById('ep-otros-nombre').value = p.categoria;
+    document.getElementById('ep-otros-group').style.display = 'flex';
+  }
+  document.getElementById('modal-edit-prod').classList.add('show');
+};
+
+window.guardarEditProd = function() {
+  const p = productos.find(x => x.id === prodEditId);
+  if (!p) return;
+  const nombre = document.getElementById('ep-nombre').value.trim();
+  if (!nombre) { alert('El nombre no puede estar vacío.'); return; }
+  let cat = document.getElementById('ep-categoria').value;
+  if (cat === 'Otros') {
+    const c = document.getElementById('ep-otros-nombre').value.trim();
+    if (c) cat = c;
+  }
+  const precio = parseFloat(document.getElementById('ep-precio').value);
+  p.nombre    = nombre;
+  p.categoria = cat;
+  if (!isNaN(precio) && precio >= 0) p.precio = precio;
+  saveRemote('productos', productos);
+  cerrarEditProd();
+  renderInventario(); actualizarSelectProductos();
+};
+
+window.cerrarEditProd = function() {
+  document.getElementById('modal-edit-prod').classList.remove('show');
+  prodEditId = null;
+  document.getElementById('ep-otros-group').style.display = 'none';
+};
+
+// Mostrar/ocultar campo nombre categoría en modal editar producto
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.id === 'ep-categoria') {
+    document.getElementById('ep-otros-group').style.display =
+      e.target.value === 'Otros' ? 'flex' : 'none';
+  }
+});
 
 /* ════ FINANZAS ════ */
 function renderFinanzas() {
@@ -1487,7 +1899,7 @@ window.ejecutarCierre = function() {
   historial.push({
     id: Date.now(),
     fecha: ahora.toLocaleDateString('es-VE'),
-    hora: ahora.toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'}),
+    hora: ahora.toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit', timeZone:'America/Caracas'}),
     ventas: tV, gastos: tG, utilidad: util,
     numVentas: ventas.length, numGastos: gastos.length
   });
@@ -1590,7 +2002,7 @@ window.venderPedido = function(id) {
     ciudad: p.ciudad || 'Caracas',
     fecha: today(),
     direccion: p.direccion || '',
-    hora: new Date().toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'})
+    hora: new Date().toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit', timeZone:'America/Caracas'})
   });
   saveRemote('ventas', ventas);
   savePedidos();
